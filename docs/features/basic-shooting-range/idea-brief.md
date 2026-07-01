@@ -19,82 +19,82 @@ feasibility_state: confirmed
 # Idea Brief — Basic Shooting Range
 
 ## 1. Raw idea
-Простой браузерный шутер-тир в стиле Doom (2D/псевдо-3D, без движения персонажа). Демоны появляются по фиксированным паттернам движения, игрок целится мышью и стреляет из дробовика с перезарядкой, разные демоны дают разные очки, в конце раунда — итоговый счёт. Технология (canvas 2D / raycasting / другое) пока НЕ выбрана — это решается на этапе архитектуры.
+A simple browser Doom-style shooting gallery (2D/pseudo-3D, no player movement). Demons appear by fixed movement patterns, the player aims with the mouse and fires a shotgun with a reload delay, different demons give different points, and a round ends with a total score. The technology (canvas 2D / raycasting / other) is NOT chosen yet — that is decided at the architecture stage.
 
 ## 2. Problem
-Автор проходит SDLC-курс и хочет закрепить его на реальном, доведённом до конца проекте, а не на абстрактном примере. Одновременно есть личный интерес к тому, как классические ретро-шутеры создают атмосферу глубины и «мясного» выстрела. Нет завершённого играбельного артефакта, на котором можно было бы и отработать процесс, и освоить эти техники рендера.
+The author is going through an SDLC course and wants to cement it on a real, finished project rather than an abstract example. At the same time there is a personal interest in how classic retro shooters create a sense of depth and a "meaty" shot. There is no finished playable artifact on which to both practice the process and learn these rendering techniques.
 
 ## 3. Users
-- **Автор-как-игрок** (основной): хочет получить действительно интересную мини-игру, в которую можно сыграть раунд.
-- **Автор-как-ученик**: проходит SDLC-курс, нужен сквозной артефакт, демонстрирующий процесс.
-- **Публика** (вторичный, ≈10-20 игроков/квартал): после релиза демки (itch.io / GitHub Pages) — знакомые и случайные игроки, оценивающие «фан» за первые секунды.
+- **Author-as-player** (primary): wants a genuinely fun mini-game they can play a round of.
+- **Author-as-learner**: going through the SDLC course, needs an end-to-end artifact that demonstrates the process.
+- **The public** (secondary, ≈10-20 players/quarter): after the demo is released (itch.io / GitHub Pages) — friends and random players judging the "fun" within the first few seconds.
 
 ## 4. Why now
-Триггер — прохождение SDLC-курса прямо сейчас: нужен конкретный проект, чтобы пройти пайплайн end-to-end (ideation → PRD → архитектура → задачи → реализация). Дедлайна нет, но курс задаёт естественное окно.
+Trigger — going through the SDLC course right now: a concrete project is needed to run the pipeline end-to-end (ideation → PRD → architecture → tasks → implementation). There is no deadline, but the course sets a natural window.
 
 ## 5. Out of scope
-- Движение персонажа по карте (игрок стационарен — только прицеливание).
-- Мультиплеер, сетевой код, серверная часть.
-- Несколько уровней/локаций и прогрессия между раундами.
-- Система комбо/множителей поверх счёта (score остаётся плоским числом).
-- Полноценный 3D-движок с настоящей геометрией стен и вертикальным прицеливанием.
-- Публичный релиз как цель MVP (публикация — вторичная, после играбельного ядра).
+- Player movement across a map (the player is stationary — aiming only).
+- Multiplayer, networking code, server side.
+- Multiple levels/locations and between-round progression.
+- Combo/multiplier system on top of score (score stays a flat number).
+- A full 3D engine with real wall geometry and vertical aiming.
+- Public release as an MVP goal (publishing is secondary, after the playable core).
 
 ## 6. Competitive analysis
 | # | Product · URL | Features (Doom-atmo / gameplay-loop / simplicity) | Value (1-5) | Gap |
 |---|---|---|---|---|
-| 1 | RayCast.js Engine · undefbehav.itch.io/raycast-js | Псевдо-3D рендер, ассеты Doom, tech-demo без геймплея | 4 / 1 / 2 | Нет игрового цикла: ни счёта, ни раунда, ни стрельбы-как-игры |
-| 2 | Doom-Nukem-CSS · github.com/yurkagon/Doom-Nukem-CSS | Псевдо-3D, движение, дробовик, враги, меню | 4 / 3 / 2 | Требует движения игрока → больший scope; не стационарный тир |
-| 3 | Shoot The Balloons · github.com/rajivnayanc/Shoot_the_Balloons_HTML5_canvas | Прицел мышью, клик-стрельба, счёт | 1 / 4 / 5 | Плоский 2D без Doom-атмосферы; никакой глубины/дробовика |
-| 4 | Shooting Range Simulator · gameforge.com/.../shooting-range-simulator | Браузерный тир, реалистичная стрельба | 1 / 3 / 4 | Реалистичная эстетика, не Doom; нет псевдо-3D демонов |
-| 5 | RaycastingDemo · github.com/Krashner/RaycastingDemo | Простое Doom-style raycasting demo | 4 / 1 / 3 | Только демо-рендер; нет геймплея тира (перезарядка, счёт) |
+| 1 | RayCast.js Engine · undefbehav.itch.io/raycast-js | Pseudo-3D render, Doom assets, tech-demo without gameplay | 4 / 1 / 2 | No gameplay loop: no score, no round, no shooting-as-a-game |
+| 2 | Doom-Nukem-CSS · github.com/yurkagon/Doom-Nukem-CSS | Pseudo-3D, movement, shotgun, enemies, menu | 4 / 3 / 2 | Requires player movement → larger scope; not a stationary gallery |
+| 3 | Shoot The Balloons · github.com/rajivnayanc/Shoot_the_Balloons_HTML5_canvas | Mouse aim, click-to-fire, score | 1 / 4 / 5 | Flat 2D with no Doom atmosphere; no depth/shotgun |
+| 4 | Shooting Range Simulator · gameforge.com/.../shooting-range-simulator | Browser shooting range, realistic shooting | 1 / 3 / 4 | Realistic aesthetic, not Doom; no pseudo-3D demons |
+| 5 | RaycastingDemo · github.com/Krashner/RaycastingDemo | Simple Doom-style raycasting demo | 4 / 1 / 3 | Render demo only; no shooting-gallery gameplay (reload, score) |
 
-Footnotes (date · query): все строки — WebSearch, 2026-07-01. #1,#2,#5 — «browser Doom-style raycasting shooting gallery game JavaScript demo». #3,#4 — «online browser shooting range target shooter game HTML5 no download».
+Footnotes (date · query): all rows — WebSearch, 2026-07-01. #1,#2,#5 — "browser Doom-style raycasting shooting gallery game JavaScript demo". #3,#4 — "online browser shooting range target shooter game HTML5 no download".
 
-**Ключевой зазор:** никто не совмещает Doom-псевдо-3D-эстетику с loop'ом стационарного тира (демоны по паттернам + дробовик с перезарядкой + счёт за раунд). Raycasting-проекты дают атмосферу без игрового цикла; target-шутеры дают цикл без атмосферы.
+**Key gap:** nobody combines a Doom pseudo-3D aesthetic with a stationary shooting-gallery loop (patterned demons + shotgun with reload + score per round). Raycasting projects deliver atmosphere without a gameplay loop; target shooters deliver a loop without atmosphere.
 
 ## 7. Strategic approaches
 
 ### Approach A — Flat 2D Carnival Shooting
-- **Thesis**: Статичный Doom-тематический фон с плоскими пиксельными спрайтами демонов, выскакивающими по фиксированным путям, отстрел прицелом мыши и дробовиком с перезарядкой, финальный счёт.
-- **For whom**: Автор-ученик, которому нужен завершённый раунд на экране в первый же вечер, и SDLC-ревьюер, ценящий явно поставляемый MVP.
-- **Outcome metric**: Time-to-first-playable-round: baseline (нет демо) → кликабельный раунд со счётом за ≤2 вечера.
-- **Key trade-off**: Отказ от настоящей псевдо-3D-глубины; атмосферу несут спрайты и фон, а не 3D.
+- **Thesis**: A static Doom-themed backdrop with flat pixel demon sprites popping in on fixed paths, shot down with a mouse crosshair and a reload-gated shotgun, ending in a final score.
+- **For whom**: The author-as-learner who wants a finished round on screen the very first evening, and the SDLC reviewer who values a demonstrably shippable MVP.
+- **Outcome metric**: Time-to-first-playable-round: baseline (no demo) → a clickable, scoreable round in ≤2 evenings.
+- **Key trade-off**: Drops true pseudo-3D depth; atmosphere is carried by sprites and a backdrop instead of real 3D.
 - **Effort signal**: S
 - **Recommended?** ◯
 
 ### Approach B — Corridor Dread, Point-Blank Punch
-- **Thesis**: Продать безошибочно узнаваемое Doom-ощущение через псевдо-3D-коридор с туманом глубины, мерцающим светом и пиксельными демонами, выпрыгивающими из темноты под «костедробительный» выстрел.
-- **For whom**: Автор и все, кто вырос на Doom — игроки, гонящиеся за тактильным атмосферным «boomer-shooter»-трепетом, а не за аркадным минимализмом.
-- **Outcome metric**: «Feels like Doom» gut-check плейтестеров: baseline ~40% → 85%+ утвердительных с первого захода.
-- **Key trade-off**: Полировка глубины/света/фидбэка съедает время, которое плоский тир потратил бы на разнообразие демонов и режимы; атмосфера в приоритете над широтой.
+- **Thesis**: Sell an unmistakable Doom feel through a pseudo-3D corridor with depth-fog, flickering light, and chunky pixel demons lunging from darkness into a bone-rattling shotgun blast.
+- **For whom**: The author and anyone who grew up on Doom — players chasing the tactile, atmospheric "boomer-shooter" thrill rather than arcade minimalism.
+- **Outcome metric**: "Feels like Doom" gut-check from playtesters: baseline ~40% → 85%+ affirmative on first play.
+- **Key trade-off**: Depth/light/feedback polish eats time a flat gallery would spend on demon variety and modes; atmosphere is prioritized over breadth.
 - **Effort signal**: M
 - **Recommended?** ◯
 
 ### Approach C — Layered 2.5D Shooting Gallery
-- **Thesis**: Сначала выпустить играбельный раунд стационарного дробовика на плоском 2D, затем наложить масштабирование спрайтов и фон, чтобы демоны «наступали» из глубины — Doom-атмосфера без 3D-движка.
-- **For whom**: Автор-как-игрок, которому нужна и по-настоящему фановая мини-игра, И видимый SDLC-артефакт, демонстрирующий стадийную инкрементальную поставку.
-- **Outcome metric**: «Feels like Doom» self-rating после плейтеста: baseline 2/5 (плоские мишени) → target 4/5 (масштабируемые демоны + фон + фидбэк дробовика).
-- **Key trade-off**: Слой псевдо-глубины (масштаб спрайтов, спавн-из-горизонта, отдача/вспышка) добавляет один цикл-улучшение поверх плоского MVP, но останавливается до настоящего 3D — жертвуются дальняя перспектива и вертикальное прицеливание.
+- **Thesis**: Ship a playable stationary-shotgun round on flat 2D first, then layer sprite scaling and a backdrop so demons "approach" from depth — Doom atmosphere without a 3D engine.
+- **For whom**: The author-as-player who wants both a genuinely fun mini-game AND a visible SDLC artifact demonstrating staged, incremental delivery.
+- **Outcome metric**: "Feels like Doom" self-rating after a playtest: baseline 2/5 (flat targets) → target 4/5 (scaled demons + backdrop + shotgun feedback).
+- **Key trade-off**: The pseudo-depth layer (sprite scaling, spawn-from-horizon, recoil/flash) adds one enhancement cycle over the flat MVP but stops short of true 3D — far-field perspective and vertical aiming are sacrificed.
 - **Effort signal**: M
 - **Recommended?** ●
 
 ## 8. Multi-perspective feedback
 
 ### Engineer
-- **A**: Наименьшая интеграционная поверхность, прощающий тайминг цикла, главный риск — input (маппинг прицела, гейтинг перезарядки, хитбоксы). Но плоский дизайн запирает: глубину потом = переписать рендер и хит-тест.
-- **B**: Наивысшая сложность рендера (проекция, туман, свет, хит-тест в проекции), эффекты чувствительны к таймингу (elapsed-time, не кадры), тяжёлый asset-pipeline. Больше всего может сломаться до того, как что-то станет играбельным.
-- **C**: Лучшее секвенирование риска (плоский раунд — реальный чекпоинт, глубина аддитивна), но требует дисциплинированного шва с 1-го дня; иначе — рефактор. Главная опасность — scope creep на слое.
+- **A**: Smallest integration surface, forgiving loop timing; the main risk is input (crosshair mapping, reload gating, hitboxes). But the flat design boxes you in: adding depth later = rewriting the render and hit-test.
+- **B**: Highest render complexity (projection, fog, light, hit-test in projected space), effects sensitive to timing (elapsed-time, not frames), heavy asset pipeline. The most that can break before anything is playable.
+- **C**: Best risk sequencing (the flat round is a real checkpoint, depth is additive), but requires a disciplined seam from day one; otherwise a refactor. Main hazard: scope creep at the layer.
 
 ### Executive
-- **A**: Наивысшая вероятность завершённого артефакта, но слабейшая дифференциация портфолио и высокий opportunity cost по обучению (обходит самую поучительную часть — псевдо-3D).
-- **B**: Наивысший потолок обучения/портфолио, но наивысший риск заброса напрямую бьёт по главной ценности («завершить»); плохо ложится на инкрементальный SDLC-нарратив.
-- **C**: Лучшее соответствие контексту: гарантированный раунд A + глубина B как вторая стадия; сам стадийный план и есть курсовой артефакт; худший случай деградирует до A, а не до нуля.
+- **A**: Highest certainty of a finished artifact, but weakest portfolio differentiation and high opportunity cost on learning (it sidesteps the most instructive part — pseudo-3D).
+- **B**: Highest learning/portfolio ceiling, but the highest abandonment risk directly attacks the primary value ("finish"); poor fit for the incremental SDLC narrative.
+- **C**: Best fit for the context: A's guaranteed round + B's depth as a second stage; the staged plan itself is the course artifact; worst case degrades to A, not to nothing.
 
 ### UX-researcher
-- **A**: Мгновенная читаемость «навёл-выстрелил», но слабейшая атмосфера (ярмарка, не Doom); reload рискует ощущаться простоем без juice; фикс-пути предсказуемы.
-- **B**: Наивысшая отдача атмосферы и «Doom dread», point-blank-выстрел — ключевой момент feel; но темнота/туман угрожают читаемости прицела и состояния перезарядки; выше порог онбординга.
-- **C**: Лучшее управление риском feel; «наступление из глубины» даёт читаемость угрозы и естественный ramp-туториал; опасность — «ни аркада, ни хоррор», нужна одна связная тональность.
+- **A**: Instant "point-and-shoot" readability, but weakest atmosphere (carnival, not Doom); reload risks feeling like downtime without juice; fixed paths are predictable.
+- **B**: Highest atmosphere payoff and "Doom dread", the point-blank shot is the core feel moment; but darkness/fog threaten crosshair and reload-state legibility; higher onboarding barrier.
+- **C**: Best-managed feel risk; "approach from depth" gives threat legibility and a natural ramp/tutorial; hazard is "neither arcade nor horror", needs one coherent tone.
 
 ### Synthesis matrix
 |         | Engineer | Executive | UX |
@@ -103,76 +103,76 @@ Footnotes (date · query): все строки — WebSearch, 2026-07-01. #1,#2,
 | App. B  | −        | −         | +  |
 | App. C  | +        | +         | +  |
 
-- A/Eng: простейший цикл, но плоский тупик.
-- A/Exec: безопасный пол, низкий потолок обучения.
-- A/UX: мгновенный онбординг, слабейшая Doom-атмосфера.
-- B/Eng: высшая сложность, риск до playable.
-- B/Exec: риск заброса бьёт по «завершить».
-- B/UX: лучшая атмосфера, но риск читаемости.
-- C/Eng: лучшее секвенирование, если шов держит.
-- C/Exec: хеджирует завершение, сохраняет ценное обучение.
-- C/UX: естественный ramp, риск серединной тональности.
+- A/Eng: simplest loop, but a flat dead-end.
+- A/Exec: safe floor, low learning ceiling.
+- A/UX: instant onboarding, weakest Doom atmosphere.
+- B/Eng: highest complexity, risk before playable.
+- B/Exec: abandonment risk attacks "finish".
+- B/UX: best atmosphere, but legibility risk.
+- C/Eng: best sequencing, if the seam holds.
+- C/Exec: hedges finishing, keeps valuable learning.
+- C/UX: natural ramp, mid-tone positioning risk.
 
 ## 9. Trade-offs and edge cases
 
 ### Trade-offs per approach
 | Approach | Pros | Cons |
 |---|---|---|
-| A | Быстрее всего до playable; почти нет выброшенной работы; бюджет уходит в juice | Слабая Doom-атмосфера; низкий потолок обучения; глубину потом = переписать |
-| B | Максимум атмосферы и «wow»; высший потолок обучения | Риск не дойти до playable; сложность спереди; плохо для инкрементального нарратива |
-| C | Гарантированный playable-чекпоинт + глубина 2-й стадией; деградирует до A | Нужна дисциплина шва (z с 1-го дня); риск серединной тональности; scope creep на слоях |
+| A | Fastest to playable; almost no throwaway work; budget goes to juice | Weak Doom atmosphere; low learning ceiling; adding depth later = rewrite |
+| B | Maximum atmosphere and "wow"; highest learning ceiling | Risk of never reaching playable; complexity up front; poor for the incremental narrative |
+| C | Guaranteed playable checkpoint + depth as 2nd stage; degrades to A | Needs seam discipline (z from day one); mid-tone risk; scope creep on the layers |
 
 ### Edge cases
-- Выстрел во время перезарядки — блокируется, патрон не тратится некорректно.
-- Два демона под прицелом внахлёст — попадание идёт по ближнему/верхнему; масштабированные хитбоксы не должны ловить прозрачные углы.
-- Демон прошёл весь путь неубитым — despawn: явный промах или штраф (нужно определить).
-- Спам-клик — ограничение темпа стрельбы помимо перезарядки.
-- Потеря фокуса вкладки / пауза — игровой цикл на elapsed-time, без «перемотки» и ускорения на 144 Гц.
-- Ресайз окна / разные пропорции / HiDPI — маппинг «прицел → мир» остаётся точным.
-- Раунд заканчивается, пока выстрел/анимация в полёте — корректный тайминг финализации счёта.
-- Курсор ушёл за пределы canvas / контекстное меню правой кнопки — состояние прицела и захват указателя.
+- Firing during reload — blocked, no shell consumed incorrectly.
+- Two demons overlapping under the crosshair — the hit resolves to the nearest/front one; scaled hitboxes must not register transparent corners.
+- Demon completes its whole path un-killed — despawn: an explicit miss or a penalty (needs to be defined).
+- Click spam — a fire-rate limit beyond reload.
+- Tab loses focus / pause — the game loop runs on elapsed-time, with no "fast-forward" and no 144 Hz speed-up.
+- Window resize / different aspect ratios / HiDPI — the "crosshair → world" mapping stays accurate.
+- Round ends while a shot/animation is in flight — correct score-finalization timing.
+- Cursor leaves the canvas / right-click context menu — crosshair state and pointer capture.
 
 ## 10. Risks
-- **[Топ, devil's advocate #1] Слой 2.5D — это переписывание, а не слой.** Если плоский раунд хранит позиции демонов как (x, y) и пути как 2D-точки, то глубине нужен `z`, управляющий масштабом, экранной позицией, порядком отрисовки и приоритетом попадания — этого в 2D-сборке нет. Проявление: «вторая стадия» раздувается, момент playable-2D стопорится на недели. **Митигация:** заложить поле глубины/`z` у демона в модель данных с 1-го этапа (locked-in pointer §13).
-- **Мотивационная смерть у стены 2.5D** (#2): pet-проект без дедлайна — коммиты замолкают после «фазы 1 complete». Митигация: стадийность C даёт завершённый демо уже после фазы 1.
-- **Рассинхрон прицела** (DPR / CSS-масштаб / pointer-lock, #6): «я явно попал, а промах» — самый разрушающий доверие баг шутера.
-- **Привязка к частоте кадров** (#7): движение/перезарядка по кадрам → ломается на 144 Гц.
-- **Нет условия проигрыша / конца раунда** (#9): без стейков счёт ощущается произвольным — нужно определить, что завершает раунд.
-- **«Мёртвый» дробовик** (#4): без вспышки/отдачи/звука стрельба ощущается как клик по таблице — фичи есть, «фана» нет.
+- **[Top, devil's advocate #1] The 2.5D layer is a rewrite, not a layer.** If the flat round stores demon positions as (x, y) and paths as 2D points, depth needs a `z` that drives scale, screen position, draw order and hit priority — none of which exists in the 2D build. Manifests as: the "second stage" balloons, the playable-2D momentum stalls for weeks. **Mitigation:** bake a depth/`z` field into the demon data model from stage 1 (locked-in pointer §13).
+- **Motivation death at the 2.5D wall** (#2): a pet-project with no deadline — commits go quiet after "phase 1 complete". Mitigation: C's staging yields a finished demo already after phase 1.
+- **Aim mismatch** (DPR / CSS-scale / pointer-lock, #6): "I clearly hit it and missed" — the most trust-destroying bug in a shooter.
+- **Frame-rate coupling** (#7): movement/reload counted in frames → breaks at 144 Hz.
+- **No lose/round-end condition** (#9): without stakes the score feels arbitrary — what ends a round must be defined.
+- **"Dead" shotgun** (#4): without flash/recoil/sound, shooting feels like clicking a spreadsheet — the features are there, the "fun" is not.
 
 ## 11. RICE — Claude proposed
-- **Reach (R)**: 15 — §3 Users: автор решил публиковать демку (≈10-20 игроков/квартал).
-- **Impact (I)**: 2 — §2 + Executive (§8): напрямую даёт обучение по SDLC + готовый играбельный артефакт.
-- **Confidence (C)**: 0.8 — §15: мало TBD; главная неясность (выбор технологии) вынесена на gate архитектуры, риск «слой = переписывание» известен и управляем.
-- **Effort (E)**: 4 person-weeks — Effort-сигнал M у Approach C (§7): фаза 1 (flat playable) + фаза 2 (sprite-scaling глубина).
+- **Reach (R)**: 15 — §3 Users: the author decided to publish the demo (≈10-20 players/quarter).
+- **Impact (I)**: 2 — §2 + Executive (§8): directly delivers the SDLC learning + a finished playable artifact.
+- **Confidence (C)**: 0.8 — §15: few TBDs; the main unknown (technology choice) is deferred to the architecture gate, and the "layer = rewrite" risk is known and manageable.
+- **Effort (E)**: 4 person-weeks — the Effort signal M of Approach C (§7): phase 1 (flat playable) + phase 2 (sprite-scaling depth).
 - **RICE = R × I × C / E = 15 × 2 × 0.8 / 4 = 6**
 - **State**: confirmed
 
 ## 12. Feasibility — Claude proposed
-- [☑] **Tech**: Клиентская браузерная игра с 2D-рендером и игровым циклом — стандартная, хорошо документированная территория, низкий тех-риск; репозиторий greenfield (смежных фич нет), но класс задачи прощающий.
-- [☐] **Skills**: Базовый геймплей (стрельба, счёт, игровой цикл) автору по силам; псевдо-3D-глубина/атмосфера — новое. ☐ выставлен осознанно: освоение этих техник и есть learning-цель проекта, стадийность C изолирует этот пробел во второй фазе.
-- [☑] **Time**: Несколько вечеров/неделю, дедлайна нет; при Effort ≈4 person-weeks время щедрое. Реальный риск по времени — не график, а мотивация (§10).
+- [☑] **Tech**: A client-side browser game with a 2D renderer and a game loop is standard, well-documented territory, low tech risk; the repo is greenfield (no adjacent features), but the problem class is forgiving.
+- [☐] **Skills**: Basic gameplay (shooting, score, game loop) is within reach; pseudo-3D depth/atmosphere is new. ☐ is set deliberately: learning these techniques IS the project's learning goal, and C's staging isolates that gap in the second phase.
+- [☑] **Time**: A few evenings/week, no deadline; at Effort ≈4 person-weeks time is generous. The real time risk is not the schedule but motivation (§10).
 - **State**: confirmed
 
 ## 13. Recommendation
-**Selected: Approach C — Layered 2.5D Shooting Gallery** — C единственный получает «+» у всех трёх ролей в матрице §8; ячейка **C/Executive** («хеджирует завершение, сохраняет ценное обучение») ловит суть контекста: pet-проект без дедлайна, где приоритет — доведённый до конца learning-результат. C бьёт в **конкурентный зазор §6** — raycasting-демки дают атмосферу без игрового цикла, target-шутеры дают цикл без Doom-атмосферы, а C совмещает и то, и другое стадийно. При **RICE = 6 (§11)** и **Feasibility Tech ☑ / Time ☑ / Skills ☐ (§12)** именно стадийность C позволяет закрывать Skills-пробел (псевдо-3D) во второй фазе, не ставя на кон весь проект, и в худшем случае деградировать до готового плоского демо (Approach A), а не до нуля. Это точнее всего ложится на подтверждённые ответы: атмосфера Doom (уводит от плоского A) + быстрый playable-демо (уводит от all-in B) + новичок в depth-рендере.
+**Selected: Approach C — Layered 2.5D Shooting Gallery** — C is the only approach with a "+" from all three roles in the §8 matrix; the **C/Executive** cell ("hedges finishing, keeps valuable learning") captures the essence of the context: a pet-project with no deadline where the priority is a completed learning outcome. C hits the **competitive gap of §6** — raycasting demos give atmosphere without a gameplay loop, target shooters give a loop without Doom atmosphere, and C combines both in stages. At **RICE = 6 (§11)** and **Feasibility Tech ☑ / Time ☑ / Skills ☐ (§12)**, it is precisely C's staging that lets the Skills gap (pseudo-3D) be closed in the second phase without betting the whole project, and in the worst case degrade to a finished flat demo (Approach A) rather than to nothing. This best fits the confirmed answers: Doom atmosphere (away from flat A) + a fast playable demo (away from all-in B) + a beginner in depth rendering.
 
-**Locked-in pointer**: модель данных демона с 1-го этапа несёт поле глубины/`z` (управляет масштабом, экранной позицией, порядком отрисовки и приоритетом попадания), чтобы слой sprite-scaling был аддитивным, а не переписыванием. Round-end/lose-condition определяется в PRD. Выбор конкретной технологии рендера остаётся за gate архитектуры.
+**Locked-in pointer**: from stage 1 the demon data model carries a depth/`z` field (driving scale, screen position, draw order and hit priority) so the sprite-scaling layer is additive, not a rewrite. Round-end/lose-condition is defined in the PRD. The specific rendering technology choice stays at the architecture gate.
 
 ## 14. Parked & rejected approaches
 | # | Approach | Status | Reason | Revisit trigger |
 |---|---|:---:|---|---|
-| A | Flat 2D Carnival Shooting | parked | Слабая Doom-атмосфера, низкий потолок обучения | Если время/мотивация иссякнут — C деградирует ровно в A как safe fallback |
-| B | Corridor Dread, Point-Blank Punch | parked | Риск не дойти до playable; вся сложность спереди | Если фаза 2 C зайдёт легко и появится аппетит к полной псевдо-3D-атмосфере |
+| A | Flat 2D Carnival Shooting | parked | Weak Doom atmosphere, low learning ceiling | If time/motivation runs out — C degrades exactly into A as a safe fallback |
+| B | Corridor Dread, Point-Blank Punch | parked | Risk of never reaching playable; all complexity up front | If C's phase 2 goes smoothly and appetite grows for a full pseudo-3D atmosphere |
 
 ## 15. Open questions
-- [ ] Что именно завершает раунд и есть ли условие проигрыша (таймер / все демоны / демон дошёл до игрока)? — owner: Maksim, due: этап PRD
-- [ ] Технология рендера (flat-2D-подход vs псевдо-3D-масштабирование) и её конкретная реализация — owner: Maksim, due: gate архитектуры
-- [ ] Источник спрайтов демонов (лицензионно чистые ассеты vs собственная пиксель-графика) с учётом публикации — owner: Maksim, due: этап PRD
-- [ ] Сколько типов демонов и их вклад в счёт для MVP-раунда — owner: Maksim, due: этап PRD
+- [ ] What exactly ends a round and is there a lose condition (timer / all demons / a demon reaches the player)? — owner: Maksim, due: PRD stage
+- [ ] Rendering technology (flat-2D approach vs pseudo-3D scaling) and its concrete implementation — owner: Maksim, due: architecture gate
+- [ ] Source of demon sprites (license-clean assets vs own pixel art), given publishing — owner: Maksim, due: PRD stage
+- [ ] How many demon types and their contribution to the score for the MVP round — owner: Maksim, due: PRD stage
 
 ## Related
-- [CONTEXT.md](./CONTEXT.md) — доменный глоссарий (demon, wave, spawn point, reload, score).
+- [CONTEXT.md](./CONTEXT.md) — domain glossary (demon, wave, spawn point, reload, score).
 - Next stage: `sdlc:write-prd basic-shooting-range`.
 
 ## DoD self-check
