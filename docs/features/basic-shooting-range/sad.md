@@ -125,39 +125,59 @@ Each tactical decision in later sections should be traceable to one of these str
 <!--           дерево папок + Mermaid C4Container.                                       -->
 <!-- 📌 Приклад: «web-app, content-api, media-worker, postgres, s3, cdn».                -->
 
-<One paragraph: layered / hexagonal / clean / event-driven. Why.>
+Feature-based modules inside one browser bundle. Simulation systems are plain functions over a central mutable `GameState` (ADR-0003); the game loop (ADR-0002) drives them on a fixed step and hands the state to the renderer (ADR-0001). It is a single-process monolith with one deploy unit.
 
 **Internal decomposition:**
 
 ```
-<e.g. internal/modules/goals/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + outbox impl>
-├── ports/        <HTTP handlers, DTOs, error mapping>
-└── module.go     <self-wiring>
+src/
+├── main.ts              bootstrap: mount canvas, wire modules, start loop
+├── core/
+│   ├── loop.ts          fixed-timestep accumulator            (ADR-0002)
+│   └── state.ts         GameState + entity types              (ADR-0003)
+├── entities/
+│   ├── demon.ts         Demon (z, pos, pathId, hp, pointValue)
+│   └── shot.ts
+├── systems/
+│   ├── spawn.ts         spawn points + fixed paths            (US-05)
+│   ├── weapon.ts        shotgun fire + reload gating          (US-01/02)
+│   ├── hit.ts           resolve to front-most demon by z      (AC-06)
+│   ├── round.ts         end-condition, timer, misses          (ADR-0004)
+│   └── score.ts         score by demon type                   (US-03)
+├── input/pointer.ts     aim + fire + focus/scope gating       (AC-07)
+├── render/canvas2d.ts   sprite scaling from z                 (ADR-0001)
+└── assets/sprites.ts    sprite image loading
 ```
 
 **C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <system> — Containers
+    title basic-shooting-range — Containers
 
-    Person(user, "<User>")
+    Person(player, "Player")
 
-    Container_Boundary(boundary, "<Our System>") {
-        Container(web, "<Web/API container>", "<technology>", "<purpose>")
-        Container(svc, "<Service container>", "<technology>", "<purpose>")
-        ContainerDb(db, "<DB>", "<technology>", "<purpose>")
+    Container_Boundary(app, "basic-shooting-range (browser bundle)") {
+        Container(input, "Input", "TS", "pointer/click, focus & scope gating")
+        Container(loop, "Game loop", "TS", "fixed-timestep accumulator")
+        Container(sim, "Simulation systems", "TS", "spawn, weapon, hit-test, round, score")
+        Container(state, "GameState + entities", "TS in-memory", "Demon/Shot structs, z field")
+        Container(render, "Renderer", "TS + Canvas 2D", "sprite scaling from z")
+        Container(assets, "Asset loader", "TS", "loads sprite images")
     }
 
-    System_Ext(ext, "<External>", "<purpose>")
+    System_Ext(host, "Static host", "serves bundle + assets")
+    System_Ext(browser, "Browser platform", "Canvas 2D / rAF / Pointer")
 
-    Rel(user, web, "<interaction>", "<protocol>")
-    Rel(web, svc, "<service calls>")
-    Rel(svc, db, "<reads/writes>", "<driver>")
-    Rel(svc, ext, "<emits>", "<protocol>")
+    Rel(player, input, "aims / clicks", "mouse")
+    Rel(input, loop, "queued input")
+    Rel(loop, sim, "fixed-step update")
+    Rel(sim, state, "reads/writes entities")
+    Rel(loop, render, "render(state)")
+    Rel(render, state, "reads entities + z")
+    Rel(render, browser, "draws frame", "Canvas 2D")
+    Rel(assets, host, "fetch sprites", "HTTPS, load-time")
+    Rel(render, assets, "uses sprites")
 ```
 
 ## 6. Runtime view
