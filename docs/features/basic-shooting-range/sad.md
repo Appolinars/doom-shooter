@@ -1,5 +1,5 @@
 ---
-status: Draft
+status: Accepted
 owner: "Maksim Vakulenko"
 reviewers: ["Tech Lead"]
 updated_at: "2026-07-02"
