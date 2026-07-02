@@ -189,25 +189,94 @@ C4Container
 <!--           ендпоінт-рівневі sequence-діаграми зʼявляться у stage 06 (define-api).      -->
 <!-- 📌 Приклад: «methodist → web-app: складає чорновик → web-app → content-api: зберегти». -->
 
-**Critical flow 1: <flow name>**
+**Critical flow 1: Fire → hit → score (US-01/03, AC-01, AC-06)**
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant API
-    participant Service
-    participant DB
-    User->>API: <request>
-    API->>Service: <call>
-    Service->>DB: <write tx>
-    DB-->>Service: ok
-    Service-->>API: result
-    API-->>User: 201
+    actor Player
+    participant Input
+    participant Loop as Game loop
+    participant Weapon
+    participant Hit
+    participant State as GameState
+    participant Score
+    participant Renderer
+    Player->>Input: click (crosshair over demon)
+    Input->>Loop: enqueue fire intent
+    Loop->>Weapon: try fire (fixed step)
+    Weapon->>State: loaded shell? → consume one
+    Weapon->>Hit: resolve shot at crosshair
+    Hit->>State: query demons under crosshair
+    Hit-->>Weapon: front-most demon by z
+    Weapon->>State: mark demon killed (remove)
+    Weapon->>Score: add demon.pointValue
+    Score->>State: round.score += value
+    Loop->>Renderer: render(state)
+    Renderer-->>Player: hit feedback + updated score
 ```
 
-<!-- For XS/S: 1 flow above is enough. For M+: add 2-4 more (e.g. failure-mode flow, async flow). -->
+**Critical flow 2: Fire while reloading is blocked (US-02, AC-02)**
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+```mermaid
+sequenceDiagram
+    actor Player
+    participant Input
+    participant Loop as Game loop
+    participant Weapon
+    participant Renderer
+    Player->>Input: click
+    Input->>Loop: enqueue fire intent
+    Loop->>Weapon: try fire
+    alt mid-reload or no shell
+        Weapon-->>Loop: blocked, no shell consumed
+        Loop->>Renderer: render "weapon not ready" cue
+        Renderer-->>Player: not-ready feedback
+    end
+```
+
+**Critical flow 3: Demon escapes → miss (US-06, AC-05)**
+
+```mermaid
+sequenceDiagram
+    participant Loop as Game loop
+    participant Spawn
+    participant State as GameState
+    participant Round
+    participant Renderer
+    Loop->>Spawn: advance demons along paths (fixed step)
+    Spawn->>State: update demon positions
+    alt demon reached path end un-killed
+        Spawn->>State: despawn demon
+        Spawn->>Round: record miss
+        Round->>State: round.misses += 1
+    end
+    Loop->>Renderer: render(state)
+```
+
+**Critical flow 4: Round end incl. concurrent final kill (US-04, AC-04, AC-04b)**
+
+```mermaid
+sequenceDiagram
+    participant Loop as Game loop
+    participant Weapon
+    participant Score
+    participant Round
+    participant State as GameState
+    participant Renderer
+    actor Player
+    Note over Loop: single fixed step
+    opt final shot resolves this step
+        Weapon->>Score: add final kill value
+        Score->>State: round.score += value
+    end
+    Loop->>Round: check end-condition
+    Round->>State: all resolved OR timer expired?
+    Round->>State: freeze gameplay, finalize score
+    Loop->>Renderer: render round result
+    Renderer-->>Player: final total score
+```
+
+> AC-04b is guaranteed by ordering within a single fixed step: the final kill's score-add runs before the end-condition freeze (ADR-0002 fixed-timestep + ADR-0004 round-end).
 
 ## 7. Deployment view
 
