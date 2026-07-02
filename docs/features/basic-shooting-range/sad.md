@@ -22,21 +22,21 @@ ticket: "N/A (personal pet-project)"
 <!-- 📋 Що писати: 1 абзац intent + 3 рядки топ-3 якості + таблиця stakeholders.        -->
 <!-- 📌 Приклад: «QG-1: швидкість редагування блоку p95 ≤500 мс»                         -->
 
-**Intent.** <One paragraph from PRD §Goals — what we're building and for whom.>
+**Intent.** A client-side browser Doom-style shooting gallery: the player is stationary, aims with the mouse, and fires a reload-gated shotgun at demons that advance along fixed patterns; a round ends with a total score. It exists to be both a genuinely fun playable demo and an end-to-end SDLC artifact. The accepted vector is **Approach C — Layered 2.5D Shooting Gallery** (PRD §1): ship a flat-2D playable round first, then add a sprite-scaling depth layer additively (idea-brief §13).
 
 **Top-3 quality goals (1-liners; full scenarios in §10):**
 
-1. <e.g. "Availability under partial failure of downstream module">
-2. <e.g. "Performance for EM dashboard under team-scale growth">
-3. <e.g. "Recoverability of checkpoints with <30 min RTO">
+1. **QG-1 Performance** — sustained rendering under a wave: ≥ 30 FPS, frame-time p95 ≤ 33.3 ms (PRD §6).
+2. **QG-2 Depth-readiness (additive extensibility)** — the demon carries a depth/`z` field from stage 1 so the 2.5D sprite-scaling layer is additive, not a rewrite (idea-brief §13 locked-in pointer).
+3. **QG-3 Input fidelity** — click→hit ≤ 50 ms, crosshair→world error ≤ 2 px across DPR/resize, timing drift ≤ 1% between 60↔144 Hz (PRD §6).
 
 **Stakeholders.**
 
 | Role | Interest | Sign-off owner? |
 |---|---|---|
-| <e.g. IC> | <feature usage> | No |
-| <e.g. EM> | <dashboard reads> | No |
-| <e.g. Tech Lead> | <SAD approval> | Yes |
+| Player (author-as-player) | A fun mini-game — aim, shoot, score | No |
+| Author-as-learner | An end-to-end SDLC artifact | No |
+| Tech Lead (author) | SAD approval | Yes |
 
 ## 2. Constraints
 
