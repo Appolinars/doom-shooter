@@ -307,13 +307,16 @@ A single static bundle (Vite build) served from a CDN (GitHub Pages / itch.io). 
 
 | Concept | Convention | Where defined |
 |---|---|---|
-| Logging | <e.g. structured slog, fields `module=<name>`> | <CLAUDE.md §X or here> |
-| Authentication | <e.g. JWT via session middleware> | <CLAUDE.md §X> |
-| Error handling | <e.g. domain sentinel → ports/errors.go → apperr JSON> | <CLAUDE.md §X> |
-| ID strategy | <e.g. UUID v7 in app layer> | <CLAUDE.md §X> |
-| Internationalisation | <e.g. N/A, English only> | — |
-| Observability | <e.g. OpenTelemetry on HTTP boundaries> | — |
-| Outbox / events | <module-specific patterns, if any> | <here> |
+| Logging | `console` dev-logging only, no structured logs (client-side game) | here |
+| Authentication | N/A — no accounts, no server | §3 |
+| Error handling | Fail-soft: asset/render errors degrade to the flat demo rather than crash (PRD goal) | here |
+| ID strategy | In-memory incremental entity ids, no persistence | here |
+| Internationalisation | N/A — English only | — |
+| Observability | In-engine FPS / frame-time dev overlay | §7 |
+| Time / step | All systems consume the fixed step from the loop, never wall-clock directly | ADR-0002 |
+| Depth / `z` | `z` drives sprite scale + screen position + draw order + hit priority everywhere | ADR-0001 |
+| DPR / coordinate mapping | crosshair→world mapping accounts for devicePixelRatio + resize (aim error ≤ 2 px) | here |
+| Assets / sprites | Source + sizing pipeline still open — see §11 open question | §11 |
 
 ## 9. Architecture decisions
 
