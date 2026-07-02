@@ -195,15 +195,15 @@ C4Container
 sequenceDiagram
     actor Player
     participant Input
-    participant Loop as Game loop
+    participant GameLoop as Game loop
     participant Weapon
     participant Hit
     participant State as GameState
     participant Score
     participant Renderer
     Player->>Input: click (crosshair over demon)
-    Input->>Loop: enqueue fire intent
-    Loop->>Weapon: try fire (fixed step)
+    Input->>GameLoop: enqueue fire intent
+    GameLoop->>Weapon: try fire (fixed step)
     Weapon->>State: loaded shell? → consume one
     Weapon->>Hit: resolve shot at crosshair
     Hit->>State: query demons under crosshair
@@ -211,7 +211,7 @@ sequenceDiagram
     Weapon->>State: mark demon killed (remove)
     Weapon->>Score: add demon.pointValue
     Score->>State: round.score += value
-    Loop->>Renderer: render(state)
+    GameLoop->>Renderer: render(state)
     Renderer-->>Player: hit feedback + updated score
 ```
 
@@ -221,15 +221,15 @@ sequenceDiagram
 sequenceDiagram
     actor Player
     participant Input
-    participant Loop as Game loop
+    participant GameLoop as Game loop
     participant Weapon
     participant Renderer
     Player->>Input: click
-    Input->>Loop: enqueue fire intent
-    Loop->>Weapon: try fire
+    Input->>GameLoop: enqueue fire intent
+    GameLoop->>Weapon: try fire
     alt mid-reload or no shell
-        Weapon-->>Loop: blocked, no shell consumed
-        Loop->>Renderer: render "weapon not ready" cue
+        Weapon-->>GameLoop: blocked, no shell consumed
+        GameLoop->>Renderer: render "weapon not ready" cue
         Renderer-->>Player: not-ready feedback
     end
 ```
@@ -238,41 +238,41 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Loop as Game loop
+    participant GameLoop as Game loop
     participant Spawn
     participant State as GameState
     participant Round
     participant Renderer
-    Loop->>Spawn: advance demons along paths (fixed step)
+    GameLoop->>Spawn: advance demons along paths (fixed step)
     Spawn->>State: update demon positions
     alt demon reached path end un-killed
         Spawn->>State: despawn demon
         Spawn->>Round: record miss
         Round->>State: round.misses += 1
     end
-    Loop->>Renderer: render(state)
+    GameLoop->>Renderer: render(state)
 ```
 
 **Critical flow 4: Round end incl. concurrent final kill (US-04, AC-04, AC-04b)**
 
 ```mermaid
 sequenceDiagram
-    participant Loop as Game loop
+    participant GameLoop as Game loop
     participant Weapon
     participant Score
     participant Round
     participant State as GameState
     participant Renderer
     actor Player
-    Note over Loop: single fixed step
+    Note over GameLoop: single fixed step
     opt final shot resolves this step
         Weapon->>Score: add final kill value
         Score->>State: round.score += value
     end
-    Loop->>Round: check end-condition
+    GameLoop->>Round: check end-condition
     Round->>State: all resolved OR timer expired?
     Round->>State: freeze gameplay, finalize score
-    Loop->>Renderer: render round result
+    GameLoop->>Renderer: render round result
     Renderer-->>Player: final total score
 ```
 
