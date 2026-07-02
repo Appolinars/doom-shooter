@@ -286,18 +286,15 @@ sequenceDiagram
 <!-- 📌 Приклад: «500 IC → партиціонування за кварталом» (не «при зростанні подумаємо»).    -->
 <!-- 🎯 Можна N/A для XS/S функцій, що переюзають існуюче розгортання без змін.            -->
 
-<Topology in 2-3 sentences. Where it runs (k8s / VM / serverless), replicas, scaling thresholds.>
+A single static bundle (Vite build) served from a CDN (GitHub Pages / itch.io). There is no server, no replicas, and no runtime scaling — everything runs on the player's device. The deployment unit is the set of static files; "release" is a push to the host.
 
 **Monitoring:**
-- <Metrics — e.g. Prometheus `<metric_name>`>
-- <Alerts — e.g. "outbox lag > 10 min → page on-call">
-- <Tracing — e.g. OpenTelemetry HTTP spans>
+- No server telemetry in MVP — FPS is measured in-engine via a dev overlay (rAF frame-time), matching the PRD §6 measurement source.
+- The host (itch.io / GitHub Pages) provides only coarse traffic counts; no per-session metrics are collected (PRD §6.1 — no analytics).
 
 **Scaling thresholds:**
-- <e.g. 500 IC × 5 goals × 26 checkpoints/Q = 65k rows/year — comfortable in one table>
-- <e.g. partitioning by quarter at >500k rows/year>
-
-<!-- For XS/S that doesn't change deployment: <!-- N/A: feature reuses existing deployment unit -->. -->
+- Bundle + assets ≤ ~2–3 MB → keeps initial load ≤ 3 s on broadband (PRD §6 load NFR).
+- ≤ ~30 concurrent live demons on screen → holds ≥ 30 FPS on mid-range hardware (PRD §6 FPS NFR). Revisit the sprite-scaling cost budget when the depth layer lands.
 
 ## 8. Crosscutting concepts
 
