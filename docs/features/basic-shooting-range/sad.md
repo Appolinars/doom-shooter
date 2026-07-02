@@ -278,6 +278,57 @@ sequenceDiagram
 
 > AC-04b is guaranteed by ordering within a single fixed step: the final kill's score-add runs before the end-condition freeze (ADR-0002 fixed-timestep + ADR-0004 round-end).
 
+**Flow 5: Reload cycle (US-02, AC-02)**
+
+```mermaid
+sequenceDiagram
+    actor Player
+    participant Input
+    participant GameLoop as Game loop
+    participant Weapon
+    participant State as GameState
+    participant Renderer
+    Note over Weapon, State: Precondition: exactly one loaded shell
+    Player->>Input: click (crosshair anywhere)
+    Input->>GameLoop: enqueue fire intent
+    GameLoop->>Weapon: try fire (fixed step)
+    Weapon->>State: consume last shell (shells = 0)
+    Weapon->>State: start reload timer
+    GameLoop->>Renderer: render(state)
+    Renderer-->>Player: reload-in-progress cue
+    loop each fixed step until reload timer elapses
+        GameLoop->>Weapon: advance reload timer
+    end
+    Weapon->>State: reload complete, shells = full
+    GameLoop->>Renderer: render(state)
+    Renderer-->>Player: weapon-ready cue
+    Note over Weapon: fire attempts mid-reload are blocked (Critical flow 2, AC-02)
+    Note over Weapon, State: Postcondition: shotgun loaded, ready to fire
+```
+
+**Flow 6: Demon spawn & patterned movement (US-05, AC-06)**
+
+```mermaid
+sequenceDiagram
+    participant GameLoop as Game loop
+    participant Spawn
+    participant State as GameState
+    participant Renderer
+    actor Player
+    Note over Spawn, State: Precondition: round in progress, wave schedule defined
+    GameLoop->>Spawn: advance wave schedule (fixed step)
+    alt next spawn slot reached
+        Spawn->>State: create demon at spawn point (type, pathId, z)
+    end
+    GameLoop->>Spawn: advance demons along fixed paths
+    Spawn->>State: update demon pos + z per path
+    GameLoop->>Renderer: render(state)
+    Renderer->>State: read demons (pos, z)
+    Renderer-->>Player: demons drawn, sprite scale from z (ADR-0001)
+    Note over Spawn: path end un-killed → despawn + miss (Critical flow 3, AC-05)
+    Note over Spawn, State: Postcondition: demons on field follow fixed patterns with depth
+```
+
 ## 7. Deployment view
 
 <!-- 🎯 Навіщо: ТОПОЛОГІЯ, яку DevOps має знати без читання Helm-чартів — скільки реплік,  -->
