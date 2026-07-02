@@ -327,10 +327,12 @@ A single static bundle (Vite build) served from a CDN (GitHub Pages / itch.io). 
 
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use sliding window for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate outbox worker in API process"> | Accepted | §<N> |
+| 0001 | Render on Canvas 2D with per-frame sprite scaling | Accepted | §4 |
+| 0002 | Drive the game loop on a fixed timestep with a delta accumulator | Accepted | §4 |
+| 0003 | Model entities as plain typed structs over an ECS | Accepted | §4 |
+| 0004 | End a round on all-resolved OR timer, with no hard game-over | Accepted | §4 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/basic-shooting-range/adr/NNNN-<title>.md`.
 
 ## 10. Quality requirements
 
@@ -343,20 +345,20 @@ ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
 
 Each top-3 goal from §1 expanded into a full scenario:
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behavior with numbers from PRD NFR>
-- **How verify:** <test / chaos drill / load test / observability>
+**QG-1. Performance**
+- **When:** a wave of up to ~30 live demons is on screen.
+- **Then:** ≥ 30 FPS, frame-time p95 ≤ 33.3 ms; input→hit ≤ 50 ms.
+- **How verify:** rAF frame-time capture in a profiler during a scripted wave; in-engine timestamp delta for latency.
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-2. Depth-readiness (additive extensibility)**
+- **When:** the 2.5D depth layer is added on top of the flat round.
+- **Then:** the layer only varies `demon.z`; the hit-test / score / round contracts are unchanged (additive, not a rewrite).
+- **How verify:** the flat round runs as a code path with all `z` equal; a diff shows the depth layer touches only the renderer + `z` population, not system contracts.
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-3. Input fidelity**
+- **When:** playing across 60↔144 Hz and across DPR / window resize.
+- **Then:** timing drift ≤ 1% between 60↔144 Hz; crosshair→world error ≤ 2 px; input→hit ≤ 50 ms.
+- **How verify:** elapsed-time test on two refresh rates; crosshair→world mapping test on HiDPI + after resize.
 
 ## 11. Risks and technical debt
 
@@ -373,12 +375,17 @@ Each top-3 goal from §1 expanded into a full scenario:
 
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Outbox lag may reach hours during downstream outage> | Medium | <Alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event schema versioning in v1> | Medium | <ADR-NNNN planned for v2, graceful handling of unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from Step-7 Save-as-OQ> | <owner> |
+| MVP round has no fail state → may feel low-tension until the depth layer lands | Medium | escape=miss gives soft stakes; revisit the lose-condition with the depth layer | Maksim (product) |
+| Canvas 2D FPS ceiling above ~30 concurrent demons | Medium | cap spawns, profile; move to WebGL only if truly needed (ADR-0001) | Maksim |
+| The "additive" depth layer silently becomes a rewrite if `z` is not wired from stage 1 | Medium | `z` is a §2 locked-in convention + QG-2 additive-diff test | Maksim |
+| Asset-licensing takedown once published | Low | license-clean assets only (PRD §6.1) | Maksim |
+| Open architectural decision: asset / sprite source + sizing pipeline | Open question | Resolve before implementation; depends on art capability (Save-as-OQ from §8) | Maksim |
+| Open architectural decision: hard lose-condition ("a demon reaches the player") | Open question | Resolve at the depth-layer stage (deferred in ADR-0004) | Maksim |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. Goal entity is not versioned (immutable) — OK for v1, may need audit versioning in v2>
+- No render interpolation in loop v1 (ADR-0002 neutral) — add if visible judder appears.
+- In-memory incremental ids, no persistence — OK (no save / leaderboard, PRD N7).
+- Exact demon-type count and point values not fixed (PRD default: 2 types) — tune during implementation.
 
 ## 12. Glossary
 
@@ -390,6 +397,14 @@ Each top-3 goal from §1 expanded into a full scenario:
 
 | Term | Meaning |
 |---|---|
-| <e.g. Goal> | <quarterly intent in statement form> |
-| <e.g. KR> | <Key Result — measurable target linked to a Goal> |
-| <e.g. Checkpoint> | <bi-weekly progress update on a KR> |
+| Demon | A target creature the player shoots at (CONTEXT). Carries a `z` depth field from stage 1. |
+| Wave | The group of demons appearing within a single round/run (CONTEXT). |
+| Spawn point | A fixed screen coordinate where a demon appears — a single coordinate, not an area (CONTEXT). |
+| Reload | The delayed shotgun-refill process that blocks firing while it lasts (CONTEXT). |
+| Score | The flat total of points accumulated in one round, no multiplier (CONTEXT, PRD N4). |
+| Miss | A demon that reaches the end of its path un-killed; recorded against the round (AC-05). |
+| Round | One self-contained play session; ends on all-resolved OR timer, no game-over (ADR-0004). |
+| Depth / `z` | Per-demon field driving sprite scale, screen position, draw order, and hit priority (ADR-0001). |
+| Sprite scaling | The pseudo-depth technique: on-screen size = f(`z`) on the Canvas 2D surface (ADR-0001). |
+| Fixed timestep | Logic advances in fixed increments via a delta accumulator, decoupled from refresh rate (ADR-0002). |
+| Front-most hit | On overlapping demons, the shot resolves to the nearest by `z` (AC-06). |
