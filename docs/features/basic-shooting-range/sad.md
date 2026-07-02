@@ -74,28 +74,30 @@ ticket: "N/A (personal pet-project)"
 
 <!-- brownfield: N/A — greenfield repo (only docs/ present at stage 04-05, no source files) -->
 
-<Business context in 2-3 sentences. What the system does for whom.>
+The game runs entirely in the player's browser. **Deliberate decision: there are no external services at runtime** — no backend, no API, no analytics. The only external actor is the static host, which serves the bundle once at load time; the browser platform provides the render and input APIs. The trust boundary is the browser tab, and all state is ephemeral (PRD N2, §6.1).
 
 **External systems (in / out):**
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| <e.g. IC> | Person | Creates goals, adds checkpoints |
-| <e.g. notification-service> | System (internal) | Receives cron registration |
-| <e.g. Identity Provider> | System (external) | Provides JWT tokens |
+| Player | Person | Aims / fires with the mouse, reads the score on the canvas |
+| Static host (itch.io / GitHub Pages) | System (external) | Serves the static bundle over HTTPS (load-time only) |
+| Browser platform (Canvas / rAF / Pointer API) | System (external) | Provides render + input APIs to the runtime |
 
 **C4 Context (L1):**
 
 ```mermaid
 C4Context
-    title <system> — System Context
+    title basic-shooting-range — System Context
 
-    Person(user, "<User>", "<role + intent>")
-    System(system, "<Our System>", "<one-sentence description>")
-    System_Ext(ext, "<External system>", "<one-sentence description>")
+    Person(player, "Player", "aims with mouse, fires shotgun, reads score")
+    System(game, "basic-shooting-range", "Client-side browser Doom-style shooting gallery")
+    System_Ext(host, "Static host", "itch.io / GitHub Pages — serves the static bundle")
+    System_Ext(browser, "Browser platform", "Canvas 2D, requestAnimationFrame, Pointer API")
 
-    Rel(user, system, "<interaction>", "<protocol>")
-    Rel(system, ext, "<interaction>", "<protocol>")
+    Rel(player, game, "Aims / fires / reads score", "mouse + keyboard, in-tab")
+    Rel(host, player, "Serves static bundle", "HTTPS, load-time only")
+    Rel(game, browser, "Renders frames, reads input", "Canvas 2D / rAF / Pointer")
 ```
 
 ## 4. Solution strategy
