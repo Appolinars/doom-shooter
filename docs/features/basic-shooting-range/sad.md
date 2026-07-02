@@ -108,11 +108,12 @@ C4Context
 <!-- 📋 Що писати: список з 3-4 виборів. На кожен — заголовок + 2-3 речення rationale.    -->
 <!-- 📌 Приклад: «Зберігати урок як таблицю блоків» — стовп, з якого виросло ADR-0001.    -->
 
-**Top-3 strategic choices (the seeds for ADRs):**
+**Four strategic pillars (the seeds for ADRs):**
 
-1. **<e.g. Module isolation through events>** — <2-3 sentences rationale referencing Quality Goals and constraints>.
-2. **<e.g. Single-store persistence (Postgres)>** — <2-3 sentences>.
-3. **<e.g. Server-rendered dashboard>** — <2-3 sentences>.
+1. **Render on Canvas 2D with per-frame sprite scaling** — the demon's screen scale, position, draw order (back→front) and hit priority (front-most) are all functions of its `z` field. This makes Approach C additive: the flat-2D round is the same code path with equal `z`, and the depth layer only starts varying `z`. Grows from §2 (Canvas 2D surface + the `depth/z` convention locked in from stage 1) and serves QG-2. → **ADR-0001**.
+2. **Fixed-timestep game loop with a delta accumulator** — logic updates on a fixed step, rendering is decoupled from refresh rate. Directly satisfies §2/PRD §6 NFR *timing drift ≤ 1% between 60↔144 Hz* and QG-3 frame-rate independence — a variable-`dt` loop would let movement drift between refresh rates. → **ADR-0002**.
+3. **Plain typed entities over an ECS** — `Demon` is a small typed struct (`z`, pos, pathId, hp, pointValue) inside a central `GameState`; no entity-component-system. Grows from the §2 organisational constraint (solo dev, playable round in ≤ 2 evenings): with only 2 demon types an ECS is over-engineering that spends the evening budget on framework, not gameplay. → **ADR-0003**.
+4. **Round ends on all-resolved OR timer, no hard game-over** — the round ends when every wave demon is resolved (killed or escaped) or a fixed timer expires; an escape counts as a miss; there is no lose condition in MVP. Grows from §2 (no server → round state is ephemeral, the round is a self-contained client loop) and closes PRD §8 open question #1. → **ADR-0004**.
 
 Each tactical decision in later sections should be traceable to one of these strategic seeds. Tactical decisions that *contradict* a strategic choice are red flags — surface them in §11 Risks.
 
