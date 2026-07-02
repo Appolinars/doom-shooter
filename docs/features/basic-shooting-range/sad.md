@@ -46,23 +46,23 @@ ticket: "N/A (personal pet-project)"
 <!-- 📌 Приклад: «Postgres 18» (не «Postgres»); «дедлайн Q3 — жорсткий» (не «бажано»).    -->
 
 **Technical.**
-- <Language + version, e.g. Go 1.26>
-- <Framework + version, e.g. chi v5.1, pgx v5.7>
-- <Datastore + version, e.g. Postgres 18>
-- <Architecture convention, e.g. hexagonal per CLAUDE.md>
+- TypeScript 5.x, target ES2022 — type safety for solo maintainability.
+- Browser-only runtime, **no server / no backend** (PRD N2, §6.1); published as a static bundle (itch.io / GitHub Pages).
+- Rendering surface: HTML5 Canvas 2D context. The pseudo-depth *technique* on top of it is a §4 strategic decision (see ADR-0001).
+- Vite as bundler → static build output.
 
 **Organisational.**
-- <Effort budget, e.g. 3 person-weeks>
-- <Deadline, e.g. 2026-Q3 hard>
-- <Team composition, e.g. 1 backend + 0.5 frontend>
+- 1 solo developer, a few evenings per week; **no hard deadline** (natural course window — PRD §1).
+- Effort target: a clickable, scoreable round within ≤ 2 evenings (PRD §7 KPI).
 
 **Conventions.**
-- <Link to CLAUDE.md or project conventions>
-- <Naming, ID strategy, error-handling pattern>
+- No CLAUDE.md yet — project conventions are pinned here and in [CONTEXT.md](./CONTEXT.md).
+- 🔑 The demon entity carries a depth/`z` field from stage 1 (idea-brief §13 locked-in pointer) — it drives sprite scale, screen position, draw order, and hit priority.
+- Code in English; domain vocabulary lives in CONTEXT.md `## Glossary`.
 
 **Regulatory / external.**
-- <e.g. GDPR — user deletion behavior per ADR-NNNN>
-- <e.g. SOC2, PCI — applicable controls>
+- License-clean assets only for public release (PRD §6.1 abuse case).
+- No PII / accounts / analytics in MVP → GDPR N/A (PRD §6.1). All state is ephemeral in the browser.
 
 ## 3. Context and scope
 
