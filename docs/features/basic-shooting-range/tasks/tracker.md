@@ -9,7 +9,7 @@
 | T-02 | 1 | [GameState & static config](./T-02-game-state-and-config.md) | done | — |
 | T-03 | 2 | [Fixed-timestep loop](./T-03-fixed-timestep-loop.md) | done | T-01, T-02 |
 | T-04 | 2 | [Pointer input](./T-04-pointer-input.md) | done | T-01, T-02 |
-| T-05 | 3 | [Spawn system](./T-05-spawn-system.md) | todo | T-02, T-03 |
+| T-05 | 3 | [Spawn system](./T-05-spawn-system.md) | done | T-02, T-03 |
 | T-06 | 3 | [Weapon system](./T-06-weapon-system.md) | todo | T-02, T-03 |
 | T-07 | 3 | [Hit-test & score](./T-07-hit-test-and-score.md) | todo | T-06 |
 | T-08 | 3 | [Round system](./T-08-round-system.md) | todo | T-05, T-07 |
