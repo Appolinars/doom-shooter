@@ -1,0 +1,6 @@
+_STATUS.local.md
+node_modules
+dist
+playwright-report
+test-results
+.vite

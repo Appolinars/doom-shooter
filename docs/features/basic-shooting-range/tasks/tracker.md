@@ -5,8 +5,8 @@
 
 | ID | Wave | Story | Status | Blocked by |
 |----|------|-------|--------|------------|
-| T-01 | 1 | [Project scaffold](./T-01-project-scaffold.md) | todo | — |
-| T-02 | 1 | [GameState & static config](./T-02-game-state-and-config.md) | todo | — |
+| T-01 | 1 | [Project scaffold](./T-01-project-scaffold.md) | done | — |
+| T-02 | 1 | [GameState & static config](./T-02-game-state-and-config.md) | done | — |
 | T-03 | 2 | [Fixed-timestep loop](./T-03-fixed-timestep-loop.md) | todo | T-01, T-02 |
 | T-04 | 2 | [Pointer input](./T-04-pointer-input.md) | todo | T-01, T-02 |
 | T-05 | 3 | [Spawn system](./T-05-spawn-system.md) | todo | T-02, T-03 |
