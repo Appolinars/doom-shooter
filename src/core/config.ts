@@ -21,6 +21,12 @@ export const SHELL_CAPACITY = 8;
 /** Round length before the timer end-branch fires (ADR-0004). */
 export const ROUND_DURATION_MS = 60_000;
 
+/**
+ * Reload duration once the last shell is spent (Flow 5). Decremented by the fixed
+ * step, never wall-clock (ADR-0002). Placeholder tuning value — shape locked here.
+ */
+export const RELOAD_DURATION_MS = 1_500;
+
 export type DemonName = 'fast' | 'brute';
 
 export interface DemonType {
