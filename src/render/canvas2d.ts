@@ -1,3 +1,19 @@
+// Renderer (T-09, ADR-0001) — read-only over GameState. Draws demons back→front with
+// size derived from `z` (placeholder shapes until T-10 sprites), crosshair, HUD and the
+// round-result screen, plus the FPS dev overlay (SAD §7). World space (VIRTUAL_WIDTH ×
+// VIRTUAL_HEIGHT, ADR-0001) is mapped to CSS pixels with the exact inverse of
+// pointer.ts `screenToWorld`, so aim, hit-test and draw share one coordinate system.
+
+import type { Demon, GameState, Shot } from '../core/state.ts';
+import type { WorldPoint } from '../input/pointer.ts';
+import {
+  VIRTUAL_WIDTH,
+  VIRTUAL_HEIGHT,
+  SHELL_CAPACITY,
+  DEMON_TYPES_BY_ID,
+  type DemonName,
+} from '../core/config.ts';
+
 export interface Viewport {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
@@ -37,7 +53,250 @@ export function createViewport(canvas: HTMLCanvasElement): Viewport {
   return view;
 }
 
-/** Placeholder frame — clears the surface. The T-03 loop + T-09 renderer replace this. */
+/** Placeholder frame — clears the surface. Kept for the pre-wiring boot path (main.ts). */
 export function clearFrame(view: Viewport): void {
   view.ctx.clearRect(0, 0, view.cssWidth, view.cssHeight);
 }
+
+// --- Depth (ADR-0001): z runs far(1)→near(0). Size and draw order are functions of z. ---
+
+/** Placeholder sprite radius in CSS px at z = 1 (far) and z = 0 (near). Retuned by T-10. */
+const DEMON_FAR_RADIUS = 12;
+const DEMON_NEAR_RADIUS = 46;
+
+/**
+ * On-screen radius as a monotonic-decreasing function of `z`: near (z = 0) draws largest,
+ * far (z = 1) smallest. A flat round (all `z` equal) yields identical sizes (QG-2).
+ */
+export const depthRadius = (z: number): number => {
+  const clamped = Math.min(1, Math.max(0, z));
+  return DEMON_NEAR_RADIUS + (DEMON_FAR_RADIUS - DEMON_NEAR_RADIUS) * clamped;
+};
+
+/**
+ * Demons ordered back→front for painter's-algorithm draw: far (high z) first, near (low z)
+ * last. `id` is the tiebreaker so equal-`z` demons keep a stable order — no flicker from an
+ * unstable sort in a flat round (T-09 edge case). Returns a copy; never mutates the input.
+ */
+export const depthOrder = (demons: readonly Demon[]): Demon[] =>
+  [...demons].sort((a, b) => b.z - a.z || a.id - b.id);
+
+// --- Frame timing (SAD §7 monitoring) — feeds the FPS dev overlay + the NFR check. ---
+
+export interface FrameStats {
+  fps: number;
+  /** 95th-percentile frame time in ms; the QG-1 NFR is p95 ≤ 33.3 ms. */
+  p95Ms: number;
+}
+
+export interface FrameTimer {
+  record: (frameMs: number) => void;
+  stats: () => FrameStats;
+}
+
+/** Rolling frame-time window → mean FPS + p95, for the overlay and the perf NFR (AC-T09-3). */
+export const createFrameTimer = (sampleSize = 120): FrameTimer => {
+  const samples: number[] = [];
+  return {
+    record: (frameMs: number): void => {
+      samples.push(frameMs);
+      if (samples.length > sampleSize) {
+        samples.shift();
+      }
+    },
+    stats: (): FrameStats => {
+      if (samples.length === 0) {
+        return { fps: 0, p95Ms: 0 };
+      }
+      const sorted = [...samples].sort((a, b) => a - b);
+      const p95Index = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95));
+      const p95Ms = sorted[p95Index]!;
+      const meanMs = samples.reduce((sum, v) => sum + v, 0) / samples.length;
+      return { fps: Math.round(1000 / meanMs), p95Ms: Math.round(p95Ms * 10) / 10 };
+    },
+  };
+};
+
+// --- Drawing ---
+
+interface ScreenPoint {
+  sx: number;
+  sy: number;
+}
+
+const worldToScreen = (world: WorldPoint, view: Viewport): ScreenPoint => ({
+  sx: (world.x / VIRTUAL_WIDTH) * view.cssWidth,
+  sy: (world.y / VIRTUAL_HEIGHT) * view.cssHeight,
+});
+
+const DEMON_COLORS: Record<DemonName, string> = {
+  fast: '#e5484d',
+  brute: '#30a46c',
+};
+const UNKNOWN_DEMON_COLOR = '#8b8b8b';
+
+const demonColor = (typeId: number): string => {
+  const name = DEMON_TYPES_BY_ID[typeId]?.name;
+  return name ? DEMON_COLORS[name] : UNKNOWN_DEMON_COLOR;
+};
+
+const drawBackground = (view: Viewport): void => {
+  const { ctx, cssWidth, cssHeight } = view;
+  ctx.fillStyle = '#16161a';
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
+  ctx.fillStyle = '#20262b';
+  ctx.fillRect(0, cssHeight * 0.55, cssWidth, cssHeight * 0.45);
+};
+
+const drawDemons = (view: Viewport, demons: readonly Demon[]): void => {
+  const { ctx } = view;
+  for (const demon of depthOrder(demons)) {
+    const { sx, sy } = worldToScreen(demon, view);
+    const radius = depthRadius(demon.z);
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = demonColor(demon.typeId);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#0b0b0d';
+    ctx.stroke();
+  }
+};
+
+const drawShots = (view: Viewport, shots: readonly Shot[]): void => {
+  const { ctx } = view;
+  for (const shot of shots) {
+    const { sx, sy } = worldToScreen({ x: shot.aimX, y: shot.aimY }, view);
+    if (shot.outcome === 'hit') {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 22, 0, Math.PI * 2);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#f2d024';
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = '#e5484d';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx - 10, sy - 10);
+      ctx.lineTo(sx + 10, sy + 10);
+      ctx.moveTo(sx + 10, sy - 10);
+      ctx.lineTo(sx - 10, sy + 10);
+      ctx.stroke();
+    }
+  }
+};
+
+const drawCrosshair = (view: Viewport, crosshair: WorldPoint): void => {
+  const { ctx } = view;
+  const { sx, sy } = worldToScreen(crosshair, view);
+  ctx.strokeStyle = '#f5f5f5';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(sx, sy, 16, 0, Math.PI * 2);
+  ctx.moveTo(sx - 24, sy);
+  ctx.lineTo(sx - 6, sy);
+  ctx.moveTo(sx + 6, sy);
+  ctx.lineTo(sx + 24, sy);
+  ctx.moveTo(sx, sy - 24);
+  ctx.lineTo(sx, sy - 6);
+  ctx.moveTo(sx, sy + 6);
+  ctx.lineTo(sx, sy + 24);
+  ctx.stroke();
+};
+
+const formatTime = (ms: number): string => {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+const drawHud = (view: Viewport, state: GameState): void => {
+  const { ctx, cssWidth, cssHeight } = view;
+  const { round, weapon } = state;
+
+  ctx.textBaseline = 'top';
+  ctx.font = '20px monospace';
+  ctx.fillStyle = '#f5f5f5';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Score ${round.score}`, 16, 16);
+
+  ctx.textAlign = 'right';
+  ctx.fillText(formatTime(round.timeLeftMs), cssWidth - 16, 16);
+
+  drawShells(view, weapon.shellsLoaded);
+  if (weapon.status === 'reloading') {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f2d024';
+    ctx.fillText('RELOADING', cssWidth / 2, cssHeight - 60);
+  }
+};
+
+const SHELL_PIP_WIDTH = 14;
+const SHELL_PIP_GAP = 6;
+const SHELL_PIP_HEIGHT = 20;
+
+const drawShells = (view: Viewport, shellsLoaded: number): void => {
+  const { ctx, cssWidth, cssHeight } = view;
+  const totalWidth = SHELL_CAPACITY * SHELL_PIP_WIDTH + (SHELL_CAPACITY - 1) * SHELL_PIP_GAP;
+  const startX = (cssWidth - totalWidth) / 2;
+  const y = cssHeight - 32;
+  for (let i = 0; i < SHELL_CAPACITY; i++) {
+    const x = startX + i * (SHELL_PIP_WIDTH + SHELL_PIP_GAP);
+    ctx.fillStyle = i < shellsLoaded ? '#f2d024' : '#3a3a40';
+    ctx.fillRect(x, y, SHELL_PIP_WIDTH, SHELL_PIP_HEIGHT);
+  }
+};
+
+const drawRoundResult = (view: Viewport, state: GameState): void => {
+  const { ctx, cssWidth, cssHeight } = view;
+  ctx.fillStyle = 'rgba(10, 10, 14, 0.72)';
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f5f5f5';
+  ctx.font = '48px monospace';
+  ctx.fillText('ROUND OVER', cssWidth / 2, cssHeight / 2 - 40);
+  ctx.font = '32px monospace';
+  ctx.fillText(`Final Score ${state.round.score}`, cssWidth / 2, cssHeight / 2 + 20);
+};
+
+const drawFpsOverlay = (view: Viewport, fps: FrameStats): void => {
+  const { ctx, cssWidth } = view;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.font = '12px monospace';
+  ctx.fillStyle = fps.p95Ms <= 33.3 ? '#30a46c' : '#e5484d';
+  ctx.fillText(`${fps.fps} FPS  p95 ${fps.p95Ms}ms`, cssWidth - 16, 44);
+};
+
+export interface RenderParams {
+  state: GameState;
+  view: Viewport;
+  /** Last crosshair position in world space (pointer.ts); omitted before first move. */
+  crosshair?: WorldPoint | null;
+  /** Frame-timer stats for the dev overlay; omitted hides the overlay. */
+  fps?: FrameStats | null;
+}
+
+/**
+ * Draw one frame from the current state. Read-only over `GameState` — the renderer never
+ * mutates it (data-model access pattern). Draw order: background → demons (back→front) →
+ * shot cues → crosshair → HUD → round-result overlay (when ended) → FPS overlay.
+ */
+export const render = ({ state, view, crosshair, fps }: RenderParams): void => {
+  drawBackground(view);
+  drawDemons(view, state.demons);
+  drawShots(view, state.shots);
+  if (crosshair) {
+    drawCrosshair(view, crosshair);
+  }
+  drawHud(view, state);
+  if (state.round.status === 'ended') {
+    drawRoundResult(view, state);
+  }
+  if (fps) {
+    drawFpsOverlay(view, fps);
+  }
+};
