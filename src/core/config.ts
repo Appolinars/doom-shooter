@@ -18,6 +18,14 @@ export const VIRTUAL_HEIGHT = 1000;
 /** Shells a full magazine holds; consuming the last one starts a reload (Flow 5). */
 export const SHELL_CAPACITY = 8;
 
+/**
+ * World-space crosshair hit radius (T-07): a demon is "under the crosshair" when its
+ * cached (x, y) is within this distance of the aim point. Constant across depth in the
+ * MVP — z-scaling the hitbox to match rendered sprite size is deferred with the 2.5D
+ * layer (ADR-0001). Placeholder tuning value — shape locked here.
+ */
+export const DEMON_HIT_RADIUS = 60;
+
 /** Round length before the timer end-branch fires (ADR-0004). */
 export const ROUND_DURATION_MS = 60_000;
 
