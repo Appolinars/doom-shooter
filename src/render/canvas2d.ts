@@ -6,6 +6,7 @@
 
 import type { Demon, GameState, Shot } from '../core/state.ts';
 import type { WorldPoint } from '../input/pointer.ts';
+import type { SpriteAtlas, SpriteImage } from '../assets/sprites.ts';
 import {
   VIRTUAL_WIDTH,
   VIRTUAL_HEIGHT,
@@ -140,6 +141,14 @@ const demonColor = (typeId: number): string => {
   return name ? DEMON_COLORS[name] : UNKNOWN_DEMON_COLOR;
 };
 
+const spriteKeyFor = (typeId: number): string | null =>
+  DEMON_TYPES_BY_ID[typeId]?.spriteKey ?? null;
+
+const demonSprite = (sprites: SpriteAtlas | null | undefined, typeId: number): SpriteImage | null => {
+  const key = spriteKeyFor(typeId);
+  return key ? (sprites?.get(key) ?? null) : null;
+};
+
 const drawBackground = (view: Viewport): void => {
   const { ctx, cssWidth, cssHeight } = view;
   ctx.fillStyle = '#16161a';
@@ -148,18 +157,41 @@ const drawBackground = (view: Viewport): void => {
   ctx.fillRect(0, cssHeight * 0.55, cssWidth, cssHeight * 0.45);
 };
 
-const drawDemons = (view: Viewport, demons: readonly Demon[]): void => {
+const drawDemonPlaceholder = (view: Viewport, demon: Demon, radius: number): void => {
   const { ctx } = view;
+  const { sx, sy } = worldToScreen(demon, view);
+  ctx.beginPath();
+  ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = demonColor(demon.typeId);
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#0b0b0d';
+  ctx.stroke();
+};
+
+/**
+ * Draws demons back→front, using the loaded sprite scaled to `depthRadius(z)` when the atlas
+ * has one and falling back to the placeholder circle otherwise (SAD §8 fail-soft). Passing no
+ * atlas (or one that isn't ready yet) draws all placeholders — the pre-sprite / late-arrival
+ * path (T-10 edge case).
+ */
+const drawDemons = (
+  view: Viewport,
+  demons: readonly Demon[],
+  sprites?: SpriteAtlas | null,
+): void => {
+  const { ctx } = view;
+  ctx.imageSmoothingEnabled = false; // crisp pixel art, no blur when up-scaled
   for (const demon of depthOrder(demons)) {
-    const { sx, sy } = worldToScreen(demon, view);
     const radius = depthRadius(demon.z);
-    ctx.beginPath();
-    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-    ctx.fillStyle = demonColor(demon.typeId);
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#0b0b0d';
-    ctx.stroke();
+    const sprite = demonSprite(sprites, demon.typeId);
+    if (!sprite) {
+      drawDemonPlaceholder(view, demon, radius);
+      continue;
+    }
+    const { sx, sy } = worldToScreen(demon, view);
+    const size = radius * 2;
+    ctx.drawImage(sprite, sx - size / 2, sy - size / 2, size, size);
   }
 };
 
@@ -278,6 +310,8 @@ export interface RenderParams {
   crosshair?: WorldPoint | null;
   /** Frame-timer stats for the dev overlay; omitted hides the overlay. */
   fps?: FrameStats | null;
+  /** Loaded sprite atlas; omitted or not-yet-ready draws placeholder shapes (T-10). */
+  sprites?: SpriteAtlas | null;
 }
 
 /**
@@ -285,9 +319,9 @@ export interface RenderParams {
  * mutates it (data-model access pattern). Draw order: background → demons (back→front) →
  * shot cues → crosshair → HUD → round-result overlay (when ended) → FPS overlay.
  */
-export const render = ({ state, view, crosshair, fps }: RenderParams): void => {
+export const render = ({ state, view, crosshair, fps, sprites }: RenderParams): void => {
   drawBackground(view);
-  drawDemons(view, state.demons);
+  drawDemons(view, state.demons, sprites);
   drawShots(view, state.shots);
   if (crosshair) {
     drawCrosshair(view, crosshair);
