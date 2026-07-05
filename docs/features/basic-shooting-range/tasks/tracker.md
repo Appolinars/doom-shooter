@@ -15,6 +15,6 @@
 | T-08 | 3 | [Round system](./T-08-round-system.md) | done | T-05, T-07 |
 | T-09 | 4 | [Renderer](./T-09-renderer.md) | done | T-01, T-02 |
 | T-10 | 4 | [Sprites & assets](./T-10-sprites-and-assets.md) | done | T-01 (+ §11 OQ resolved) |
-| T-11 | 5 | [Wiring & E2E](./T-11-wiring-and-e2e.md) | todo | T-04, T-08, T-09, T-10 |
+| T-11 | 5 | [Wiring & E2E](./T-11-wiring-and-e2e.md) | done | T-04, T-08, T-09, T-10 |
 
 Status values: `todo` → `in_progress` → `done` (update the row when a story's PR merges).

@@ -39,11 +39,11 @@ Then FPS ≥ 30 under ~30 demons, input→hit ≤ 50 ms, 60↔144 Hz drift ≤ 1
 
 ## Atomic checklist
 
-- [ ] Step 1: wire modules in `main.ts`; fix the per-step system order (AC-04b contract).
-- [ ] Step 2: scripted-wave harness (deterministic schedule) for perf + walkthrough runs.
-- [ ] Step 3: NFR measurement pass — record numbers against each PRD §6 row.
-- [ ] Step 4: manual AC-01…AC-07 walkthrough; fix small integration gaps found.
-- [ ] Step 5: README play instructions + build/publish note (static host).
+- [x] Step 1: wire modules in `main.ts`; fix the per-step system order (AC-04b contract) — extracted to `core/step.ts`.
+- [x] Step 2: scripted-wave harness (deterministic schedule) for perf + walkthrough runs — `?e2e` `window.__doom` API (spawnStress / fireWorld / endRoundSoon / frameStats).
+- [x] Step 3: NFR measurement pass — recorded in Results (E2E `nfr.spec` + unit-test NFRs).
+- [x] Step 4: AC-01…AC-07 walkthrough — mapped to automated evidence in Results; integration gap (unpruned feedback shots) fixed.
+- [x] Step 5: README play instructions + build/publish note (static host).
 
 ## Edge cases
 
@@ -56,3 +56,41 @@ Then FPS ≥ 30 under ~30 demons, input→hit ≤ 50 ms, 60↔144 Hz drift ≤ 1
 
 - All AC checked off with the walkthrough evidence; all five NFR numbers recorded and within target.
 - KPI "time-to-first-playable-round" retro note added to [[../idea-brief.md]] context in the PR description.
+
+## Results (2026-07-05)
+
+Wiring: `src/main.ts` boots the round (validate config + sprite keys → viewport → input → loop →
+render, sprites load in the background fail-soft). The per-step order lives in the new DOM-free
+`src/core/step.ts` (`advanceGameStep`: weapon → spawn → round, freeze-gated) so the AC-04b ordering
+is unit-tested. `createInitialGameState` added to `core/state.ts` as the production initializer.
+Integration gap fixed: feedback `Shot`s were never pruned — `main.ts` now drops cues older than
+`SHOT_CUE_MS` (250 ms) each frame. A `?e2e`-gated `window.__doom` debug API (state + fireWorld +
+spawnStress + endRoundSoon + frameStats) exists only in scripted runs, never in the normal load.
+
+### AC walkthrough (each AC → automated evidence)
+
+| AC | Evidence |
+|---|---|
+| AC-01 fire → hit → remove + feedback | `hit.test.ts`, `step.test.ts` (kill+score+shot in one step), E2E `play-round.spec` (real click → score) |
+| AC-02 fire while reloading is blocked | `weapon.test.ts` (reloading blocks, no shell consumed) |
+| AC-03 score += pointValue, non-decreasing | `score.test.ts` / `hit.test.ts`, `step.test.ts` |
+| AC-04 end freezes + final score | `round.test.ts`, `step.test.ts`, E2E `play-round.spec` (endRoundSoon → status ended) |
+| AC-04b kill on the end step still counts | `step.test.ts` "a kill on the same step the round resolves still counts before the freeze" |
+| AC-05 escape → despawn + miss | `spawn.test.ts` (escape records miss) |
+| AC-06 front-most by depth | `hit.test.ts` (nearest-z wins, id tie-break) |
+| AC-07 focus / play-area gating | `pointer.test.ts` (blurred / outside-area drop) |
+
+90 unit tests + 5 Playwright smoke/NFR flows green. `typecheck`, `lint`, `build` clean.
+
+### NFR evidence (PRD §6)
+
+| NFR | Target | Result | Source |
+|---|---|---|---|
+| Initial load | ≤ 3 s | 28 ms | E2E `nfr.spec` |
+| FPS under ~30 demons | ≥ 30 | 60 (frame p95 17.5 ms) | E2E `nfr.spec` |
+| Input → hit | ≤ 50 ms | 15 ms (sim path ~1 step ≈ 16.7 ms + 1 frame) | E2E `nfr.spec` |
+| 60↔144 Hz drift | ≤ 1% | pass | unit `loop.test.ts:66` |
+| Aim error | ≤ 2 px | pass | unit `pointer.test.ts:30` |
+
+KPI retro: time-to-first-playable-round — reached at T-11 across 11 tasks / 5 waves; the depth
+field carried from stage 1 (ADR-0001) meant the 2.5D layer stayed additive, no rewrite.
