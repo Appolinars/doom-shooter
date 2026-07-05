@@ -6,6 +6,15 @@
 // placeholder tuning values — the concrete-slot-values TBD in data-model.md is accepted
 // debt (SAD §11), tuned in T-05 (spawn) and T-09 (renderer). Their SHAPE is locked here.
 
+/**
+ * World space (ADR-0001): demon paths, waypoints and fire-intent aim coords all live
+ * in this virtual 1000×1000 space. The renderer (T-09) maps it to the canvas and
+ * input/pointer.ts (T-04) maps pointer clicks back into it — sharing this constant is
+ * what keeps aim, hit-test and draw in one coordinate system.
+ */
+export const VIRTUAL_WIDTH = 1000;
+export const VIRTUAL_HEIGHT = 1000;
+
 /** Shells a full magazine holds; consuming the last one starts a reload (Flow 5). */
 export const SHELL_CAPACITY = 8;
 

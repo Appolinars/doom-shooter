@@ -1,6 +1,7 @@
 import { createViewport, resizeToWindow, clearFrame } from './render/canvas2d.ts';
+import { startLoop } from './core/loop.ts';
 
-function bootstrap(): void {
+const bootstrap = (): void => {
   const canvas = document.getElementById('game');
   if (!(canvas instanceof HTMLCanvasElement)) {
     throw new Error('#game canvas element not found');
@@ -9,12 +10,11 @@ function bootstrap(): void {
   const view = createViewport(canvas);
   window.addEventListener('resize', () => resizeToWindow(view));
 
-  // Placeholder render stub — replaced by the fixed-timestep loop in T-03.
-  function frame(): void {
-    clearFrame(view);
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
+  // No-op update until systems land (T-05/T-06); render just clears (T-09 renderer).
+  startLoop({
+    update: () => {},
+    render: () => clearFrame(view),
+  });
+};
 
 bootstrap();
