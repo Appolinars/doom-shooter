@@ -5,6 +5,7 @@
 
 import type { Demon } from '../entities/demon.ts';
 import type { Shot } from '../entities/shot.ts';
+import { ROUND_DURATION_MS, SHELL_CAPACITY, WAVE_SCHEDULE } from './config.ts';
 
 export type { Demon } from '../entities/demon.ts';
 export type { Shot, ShotOutcome } from '../entities/shot.ts';
@@ -61,3 +62,29 @@ export interface GameState {
   /** FIFO queue drained once per fixed step. */
   fireIntents: FireIntent[];
 }
+
+/**
+ * Fresh round-start GameState — the production initializer main.ts boots from. The test
+ * factory in tests/factories.ts mirrors these defaults; kept in sync by construction.
+ * Round-start values come straight from static config: full timer, full magazine, and
+ * scheduledCount fixed to the wave-schedule length (Round.scheduledCount is "set at round
+ * start"). Everything else starts empty.
+ */
+export const createInitialGameState = (): GameState => ({
+  round: {
+    status: 'running',
+    score: 0,
+    misses: 0,
+    timeLeftMs: ROUND_DURATION_MS,
+    scheduledCount: WAVE_SCHEDULE.length,
+    resolvedCount: 0,
+  },
+  weapon: {
+    shellsLoaded: SHELL_CAPACITY,
+    status: 'ready',
+    reloadRemainingMs: 0,
+  },
+  demons: [],
+  shots: [],
+  fireIntents: [],
+});
