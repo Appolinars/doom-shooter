@@ -7,7 +7,7 @@ priority: P1
 estimate: M
 blocks: [T-03, T-04, T-05, T-06, T-09]
 blocked_by: []
-status: todo
+status: done
 context_budget: 4500
 created: 2026-07-02
 owner: Maksim Vakulenko

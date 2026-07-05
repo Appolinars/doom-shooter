@@ -88,7 +88,7 @@ Aggregate root: **`GameState`** (`src/core/state.ts`, ADR-0003) — owns all run
 | `weapon` | `Weapon` | exactly one | single shotgun |
 | `demons` | `Demon[]` | only live demons | resolved demons are removed (hard-delete analog); outcome recorded on `round` |
 | `shots` | `Shot[]` | transient | kept for hit/miss feedback rendering, pruned after the cue |
-| `fireIntents` | queued inputs | drained once per fixed step | fed by `input/pointer.ts` after AC-07 gating <!-- TBD: exact queue shape, lock during implementation --> |
+| `fireIntents` | `FireIntent[]` | FIFO, drained once per fixed step | fed by `input/pointer.ts` after AC-07 gating. **Locked (T-02):** `FireIntent = { aimX: number; aimY: number; atMs: number }` — DPR-corrected crosshair coords + round-relative timestamp; see `src/core/state.ts`. |
 
 ### `Round`
 
@@ -133,7 +133,7 @@ Aggregate root: **`GameState`** (`src/core/state.ts`, ADR-0003) — owns all run
 |---|---|---|
 | `DemonType` | `id`, `name`, `speed`, `pointValue`, `spriteKey` | 2 entries in MVP: fast/low-point, slow/high-point (PRD §8 default); values are data, scoring rule lives in `systems/score.ts` |
 | `Path` | `id`, `spawnPointRef`, `waypoints: {x, y, z}[]` | fixed patterns (US-05); spawn point is the first waypoint |
-| `WaveSchedule` | `SpawnSlot[]` = `{atMs, demonTypeId, pathId}` | sorted by `atMs` at build time; one round = one schedule in MVP <!-- TBD: concrete slot values — tuning during implementation (§11 accepted debt) --> |
+| `WaveSchedule` | `SpawnSlot[]` = `{atMs, demonTypeId, pathId}` | sorted by `atMs` at build time; one round = one schedule in MVP. **Shape locked (T-02)** in `src/core/config.ts`; the concrete slot values there are placeholder tuning values (§11 accepted debt), tuned in T-05/T-09 — the schema is stable. |
 
 ## Access patterns (index-analog)
 
