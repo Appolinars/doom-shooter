@@ -7,7 +7,7 @@ priority: P2
 estimate: S
 blocks: [T-11]
 blocked_by: [T-01]
-status: todo
+status: done
 context_budget: 4500
 created: 2026-07-02
 owner: Maksim Vakulenko
@@ -41,10 +41,10 @@ Then it runs with placeholder shapes instead of crashing (SAD §8 fail-soft), lo
 
 ## Atomic checklist
 
-- [ ] Step 1: decide + record the sprite source (resolve SAD §11 OQ row); produce/collect 2 demon sprites.
-- [ ] Step 2: loader — image loading with a ready promise, keyed by `spriteKey`.
-- [ ] Step 3: fail-soft fallback path + license note (`assets/LICENSES.md` or README section).
-- [ ] Step 4: renderer integration — swap placeholder shapes for sprites behind the loader's ready state.
+- [x] Step 1: decide + record the sprite source (resolved SAD §11 OQ row: own pixel art); authored 2 demon sprites in `src/assets/demon-art.ts`.
+- [x] Step 2: loader — `loadSprites` rasterizes to drawables behind a ready-promise, keyed by `spriteKey` (`src/assets/sprites.ts`).
+- [x] Step 3: fail-soft fallback path (failed sprite → logged + placeholder) + license note (`src/assets/LICENSES.md`).
+- [x] Step 4: renderer integration — `drawDemons` draws the sprite scaled to `depthRadius(z)` when ready, else the placeholder circle.
 
 ## Edge cases
 

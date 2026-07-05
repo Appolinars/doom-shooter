@@ -367,7 +367,7 @@ A single static bundle (Vite build) served from a CDN (GitHub Pages / itch.io). 
 | Time / step | All systems consume the fixed step from the loop, never wall-clock directly | ADR-0002 |
 | Depth / `z` | `z` drives sprite scale + screen position + draw order + hit priority everywhere | ADR-0001 |
 | DPR / coordinate mapping | crosshair→world mapping accounts for devicePixelRatio + resize (aim error ≤ 2 px) | here |
-| Assets / sprites | Source + sizing pipeline still open — see §11 open question | §11 |
+| Assets / sprites | Resolved (T-10): own pixel art, rasterized from char-grid matrices; fail-soft to placeholder shapes | §11 |
 
 ## 9. Architecture decisions
 
@@ -430,7 +430,7 @@ Each top-3 goal from §1 expanded into a full scenario:
 | Canvas 2D FPS ceiling above ~30 concurrent demons | Medium | cap spawns, profile; move to WebGL only if truly needed (ADR-0001) | Maksim |
 | The "additive" depth layer silently becomes a rewrite if `z` is not wired from stage 1 | Medium | `z` is a §2 locked-in convention + QG-2 additive-diff test | Maksim |
 | Asset-licensing takedown once published | Low | license-clean assets only (PRD §6.1) | Maksim |
-| Open architectural decision: asset / sprite source + sizing pipeline | Open question | Resolve before implementation; depends on art capability (Save-as-OQ from §8) | Maksim |
+| ~~Open architectural decision: asset / sprite source + sizing pipeline~~ | Resolved (T-10) | **Decided: own pixel art** (PRD §8 default) — hand-authored 12×12 char-grid sprites rasterized at load (`src/assets/demon-art.ts` + `sprites.ts`), fail-soft to placeholder shapes; license note in `src/assets/LICENSES.md` | Maksim |
 | Open architectural decision: hard lose-condition ("a demon reaches the player") | Open question | Resolve at the depth-layer stage (deferred in ADR-0004) | Maksim |
 
 **Accepted debt (acceptable in v1, plan to fix later):**

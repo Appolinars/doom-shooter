@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   depthOrder,
   depthRadius,
@@ -23,6 +23,8 @@ const makeStubCtx = (): CanvasRenderingContext2D => {
     moveTo: noop,
     lineTo: noop,
     fillText: noop,
+    drawImage: noop,
+    imageSmoothingEnabled: true,
   };
   return ctx as unknown as CanvasRenderingContext2D;
 };
@@ -154,6 +156,27 @@ describe('render — read-only over GameState (AC-T09-2)', () => {
     expect(() =>
       render({ state, view: makeStubViewport(), fps: { fps: 60, p95Ms: 16 } }),
     ).not.toThrow();
+  });
+
+  it('draws sprites when the atlas has them and falls back to placeholders otherwise (T-10)', () => {
+    const view = makeStubViewport();
+    const drawImage = vi.fn();
+    const arc = vi.fn();
+    Object.assign(view.ctx, { drawImage, arc });
+
+    const state = makeGameState({
+      demons: [makeDemon({ id: 1, typeId: 1, z: 0.5 }), makeDemon({ id: 2, typeId: 2, z: 0.5 })],
+    });
+    const sprites = {
+      ready: true,
+      get: (key: string) =>
+        key === 'demon-fast' ? ({} as unknown as CanvasImageSource) : null,
+    };
+
+    render({ state, view, sprites });
+
+    expect(drawImage).toHaveBeenCalledTimes(1); // fast → sprite
+    expect(arc).toHaveBeenCalled(); // brute → placeholder circle
   });
 
   it('renders a 30-demon frame (perf-shaped state) without throwing', () => {
