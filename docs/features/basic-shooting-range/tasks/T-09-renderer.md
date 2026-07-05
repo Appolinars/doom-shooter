@@ -45,11 +45,11 @@ Then the dev overlay shows ≥ 30 FPS (frame-time p95 ≤ 33.3 ms).
 
 ## Atomic checklist
 
-- [ ] Step 1: `render(state)` entry — clear, per-frame `z`-sort, placeholder-shape demon draw scaled by `z`.
-- [ ] Step 2: crosshair + HUD — score, shells, reload cue (T-06 flag), round timer.
-- [ ] Step 3: hit/miss feedback cue from transient `Shot`s; round-result overlay.
-- [ ] Step 4: FPS / frame-time dev overlay (SAD §7 monitoring).
-- [ ] Step 5: perf check with a scripted 30-demon state; unit test for the z-order sort.
+- [x] Step 1: `render(state)` entry — clear, per-frame `z`-sort, placeholder-shape demon draw scaled by `z`.
+- [x] Step 2: crosshair + HUD — score, shells, reload cue (T-06 flag), round timer.
+- [x] Step 3: hit/miss feedback cue from transient `Shot`s; round-result overlay.
+- [x] Step 4: FPS / frame-time dev overlay (SAD §7 monitoring) via `createFrameTimer` (mean FPS + p95).
+- [x] Step 5: 30-demon render check + z-order/depth-radius/frame-timer unit tests (`tests/unit/render.test.ts`). Live FPS-NFR measurement runs in-browser under T-11 (Playwright); node tests cover the ordering/scale/timer logic.
 
 ## Edge cases
 
