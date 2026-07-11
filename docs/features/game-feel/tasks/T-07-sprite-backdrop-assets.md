@@ -7,7 +7,7 @@ priority: P1
 estimate: S
 blocks: [T-08]
 blocked_by: []
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -48,12 +48,12 @@ Then a license note records each asset's source/license (PRD §6.1 abuse case) �
 
 ## Atomic checklist
 
-- [ ] Step 0 (DoR): confirm the asset list against PRD §8 default (1 SFX/action handled in T-05; here: ≥ 2 backdrops, 1 shotgun sheet, per-type demon set incl. per-HP-step hurt + death frames).
-- [ ] Step 1: `sprites.ts` — register viewmodel frames, per-HP-step hurt frames, death frames as atlas keys.
-- [ ] Step 2: `demon-art.ts` — map each demon type → {full, hurt@step, death} keys.
-- [ ] Step 3: `backdrops.ts` — load list; `pickRandom()`; fail-soft → black; expose for round start + retry reroll.
-- [ ] Step 4: license note (source + license per asset) alongside the assets.
-- [ ] Step 5: unit tests — missing key → placeholder/black + log-once (per kind); `pickRandom` returns a loaded key or the black fallback.
+- [x] Step 0 (DoR): confirm the asset list against PRD §8 default (1 SFX/action handled in T-05; here: ≥ 2 backdrops, 1 shotgun sheet, per-type demon set incl. per-HP-step hurt + death frames). *(assets-manifest.md + all 36 files already committed)*
+- [x] Step 1: `sprites.ts` — register viewmodel frames, per-HP-step hurt frames, death frames as atlas keys.
+- [x] Step 2: `demon-art.ts` — map each demon type → {full, hurt@step, death} keys. *(landed in sprites.ts as the key registry — `hurtFrameKey`/`deathFrameKey`/`DEATH_FRAME_COUNTS` + `resolveHurtSprite`; demon-art.ts stays the bundled pixel-art fallback)*
+- [x] Step 3: `backdrops.ts` — load list; `pickRandom()`; fail-soft → black; expose for round start + retry reroll.
+- [x] Step 4: license note (source + license per asset) alongside the assets. *(public/assets/CREDITS.md)*
+- [x] Step 5: unit tests — missing key → placeholder/black + log-once (per kind); `pickRandom` returns a loaded key or the black fallback.
 
 ## Edge cases
 

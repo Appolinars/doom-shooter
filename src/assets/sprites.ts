@@ -2,8 +2,13 @@
 // demon-art.ts into drawable images behind a ready-promise, keyed by `spriteKey`. A key that
 // fails to rasterize is logged and omitted — the renderer then falls back to placeholder
 // shapes (SAD §8 fail-soft, AC-T10-2), so a bad asset never crashes a round.
+//
+// game-feel T-07 extends the same atlas with author-supplied files from public/assets/
+// (viewmodel frames, per-HP-step hurt frames, per-frame death animations — assets-manifest
+// §3.2/§7): a loaded file wins over the bundled pixel art for the same key, a missing file
+// degrades to that pixel art or the placeholder shape through the same `get → null` contract.
 
-import { DEMON_TYPES, type DemonType } from '../core/config.ts';
+import { DEMON_TYPES, type DemonName, type DemonType } from '../core/config.ts';
 import { DEMON_ART, type PixelArt } from './demon-art.ts';
 
 /** Anything `CanvasRenderingContext2D.drawImage` accepts; rasterized art is an HTMLCanvasElement. */
@@ -57,42 +62,146 @@ export const rasterizePixelArt = async (art: PixelArt): Promise<SpriteImage> => 
   return canvas;
 };
 
+// --- External sprite files (game-feel T-07, assets-manifest §3.2 / §7 key contract) ---
+
+/** Viewmodel frames: fire = idle + flash overlay, then the pump sequence — no `fire` frame. */
+export const VIEWMODEL_SPRITE_KEYS = [
+  'weapon-shotgun-idle',
+  'weapon-shotgun-pump-1',
+  'weapon-shotgun-pump-2',
+  'weapon-shotgun-pump-3',
+  'weapon-shotgun-flash-1',
+  'weapon-shotgun-flash-2',
+] as const;
+
+/** Frames per death animation (§3.2, per-frame files); T-08 slices `deathProgress` over these. */
+export const DEATH_FRAME_COUNTS: Readonly<Record<DemonName, number>> = {
+  fast: 5,
+  brute: 5,
+  baron: 4,
+};
+
+/**
+ * Hurt steps actually authored per demon (§3.2): `fast` has 1 HP so no hurt frame by design;
+ * `baron` deliberately ships a single hurt-1 shared across hp 3/2/1 via nearest-step fallback.
+ */
+const AUTHORED_HURT_STEPS: Readonly<Record<DemonName, readonly number[]>> = {
+  fast: [],
+  brute: [1],
+  baron: [1],
+};
+
+export const hurtFrameKey = ({ name, hpRemaining }: { name: DemonName; hpRemaining: number }): string =>
+  `demon-${name}-hurt-${hpRemaining}`;
+
+export const deathFrameKey = ({ name, frame }: { name: DemonName; frame: number }): string =>
+  `demon-${name}-death-${frame}`;
+
+const buildSpriteFileKeys = (): string[] => {
+  const keys: string[] = [...VIEWMODEL_SPRITE_KEYS];
+  for (const type of DEMON_TYPES) {
+    keys.push(type.spriteKey);
+    for (const step of AUTHORED_HURT_STEPS[type.name]) {
+      keys.push(hurtFrameKey({ name: type.name, hpRemaining: step }));
+    }
+    for (let frame = 1; frame <= DEATH_FRAME_COUNTS[type.name]; frame++) {
+      keys.push(deathFrameKey({ name: type.name, frame }));
+    }
+  }
+  return keys;
+};
+
+/** Atlas key → URL of the author-supplied PNG served from `public/assets/sprites/` (§2). */
+export const SPRITE_FILES: Readonly<Record<string, string>> = Object.fromEntries(
+  buildSpriteFileKeys().map((key) => [key, `assets/sprites/${key}.png`]),
+);
+
+/** Browser file loader; DOM-dependent — tests inject a fake. */
+export const loadImageElement = (url: string): Promise<SpriteImage> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`image failed to load: ${url}`));
+    image.src = url;
+  });
+
+export interface ResolveHurtSpriteParams {
+  atlas: SpriteAtlas;
+  type: DemonType;
+  hp: number;
+}
+
+/**
+ * Per-HP-step hurt frame with nearest-step fallback (AC-T07-2): exact `hurt-<hp>` first,
+ * then lower steps, then the full frame — a gap in authored art degrades, never errors.
+ * Callers gate on `hp < maxHp`; an unhurt demon draws its full frame directly.
+ */
+export const resolveHurtSprite = ({ atlas, type, hp }: ResolveHurtSpriteParams): SpriteImage | null => {
+  for (let step = hp; step >= 1; step--) {
+    const frame = atlas.get(hurtFrameKey({ name: type.name, hpRemaining: step }));
+    if (frame) {
+      return frame;
+    }
+  }
+  return atlas.get(type.spriteKey);
+};
+
+// --- Loader ---
+
 type Rasterizer = (art: PixelArt) => Promise<SpriteImage>;
+
+type ImageLoader = (url: string) => Promise<SpriteImage>;
 
 export interface LoadSpritesOptions {
   art?: Readonly<Record<string, PixelArt>>;
   /** Injectable for tests; defaults to the DOM canvas rasterizer. */
   rasterize?: Rasterizer;
+  /** External sprite files keyed by atlas key (T-07); pass {} to disable file loading. */
+  files?: Readonly<Record<string, string>>;
+  /** Injectable for tests; defaults to the DOM Image loader. */
+  loadImage?: ImageLoader;
 }
 
 /**
- * Kicks off loading every sprite in `art` and returns the live atlas immediately plus a
- * `loaded` promise. The renderer reads `atlas.get` every frame, so sprites that arrive after
- * a round starts swap in on the next frame with no restart (T-10 edge case).
+ * Kicks off loading every sprite in `art` and every external file in `files`, returning the
+ * live atlas immediately plus a `loaded` promise. The renderer reads `atlas.get` every frame,
+ * so sprites that arrive after a round starts swap in on the next frame with no restart
+ * (T-10 edge case). A loaded file always wins over the bundled art for the same key.
  */
 export const loadSprites = ({
   art = DEMON_ART,
   rasterize = rasterizePixelArt,
+  files = SPRITE_FILES,
+  loadImage = loadImageElement,
 }: LoadSpritesOptions = {}): SpriteLoad => {
-  const images = new Map<string, SpriteImage>();
+  const rasterized = new Map<string, SpriteImage>();
+  const fileImages = new Map<string, SpriteImage>();
   let ready = false;
 
   const atlas: SpriteAtlas = {
-    get: (spriteKey) => images.get(spriteKey) ?? null,
+    get: (spriteKey) => fileImages.get(spriteKey) ?? rasterized.get(spriteKey) ?? null,
     get ready() {
       return ready;
     },
   };
 
-  const loaded = Promise.all(
-    Object.entries(art).map(async ([spriteKey, pixels]) => {
-      try {
-        images.set(spriteKey, await rasterize(pixels));
-      } catch (err) {
-        console.error(`[sprites] failed to load "${spriteKey}", using placeholder`, err);
-      }
-    }),
-  ).then(() => {
+  const artLoads = Object.entries(art).map(async ([spriteKey, pixels]) => {
+    try {
+      rasterized.set(spriteKey, await rasterize(pixels));
+    } catch (err) {
+      console.error(`[sprites] failed to load "${spriteKey}", using placeholder`, err);
+    }
+  });
+
+  const fileLoads = Object.entries(files).map(async ([spriteKey, url]) => {
+    try {
+      fileImages.set(spriteKey, await loadImage(url));
+    } catch (err) {
+      console.error(`[sprites] failed to load file "${spriteKey}", using fallback`, err);
+    }
+  });
+
+  const loaded = Promise.all([...artLoads, ...fileLoads]).then(() => {
     ready = true;
   });
 
