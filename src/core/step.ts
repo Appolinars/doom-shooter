@@ -29,6 +29,10 @@ export const advanceGameStep = ({ state, cursor, fixedDtMs }: AdvanceGameStepPar
   if (isRoundActive(state.round)) {
     stepWeapon({ state, fixedDtMs, onFire: resolveFire });
     stepSpawn({ state, cursor, fixedDtMs });
+  } else {
+    // Clicks on a frozen round (paused or the result screen) must never fire on resume
+    // (AC-T12-4) — drop the intents the gated weapon step would otherwise drain later.
+    state.fireIntents.length = 0;
   }
   stepRound({ state, fixedDtMs });
 };

@@ -161,6 +161,19 @@ describe('render — read-only over GameState (AC-T09-2)', () => {
     ).not.toThrow();
   });
 
+  it('draws the PAUSED overlay only while paused (AC-T12-1)', () => {
+    const view = makeStubViewport();
+    const fillText = vi.fn();
+    Object.assign(view.ctx, { fillText });
+
+    render({ state: makeGameState({ round: makeRound({ status: 'paused' }) }), view });
+    expect(fillText.mock.calls.some(([text]) => text === 'PAUSED')).toBe(true);
+
+    fillText.mockClear();
+    render({ state: makeGameState({ round: makeRound({ status: 'running' }) }), view });
+    expect(fillText.mock.calls.some(([text]) => text === 'PAUSED')).toBe(false);
+  });
+
   it('draws sprites when the atlas has them and falls back to placeholders otherwise (T-10)', () => {
     const view = makeStubViewport();
     const drawImage = vi.fn();

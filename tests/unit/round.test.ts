@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stepRound, isRoundActive } from '../../src/systems/round.ts';
+import { stepRound, isRoundActive, togglePause } from '../../src/systems/round.ts';
 import { resolveFire } from '../../src/systems/hit.ts';
 import { stepWeapon } from '../../src/systems/weapon.ts';
 import { STEP_MS } from '../../src/core/loop.ts';
@@ -100,5 +100,50 @@ describe('freeze is a one-way, idempotent gate', () => {
     expect(state.round.timeLeftMs).toBe(1234);
     expect(state.round.status).toBe('ended');
     expect(state.round.score).toBe(70);
+  });
+});
+
+describe('AC-T12-1/2/3 — togglePause flips running ⇄ paused; ended stays frozen', () => {
+  it('pauses a running round and resumes it on the next toggle', () => {
+    const round = makeRound({ status: 'running' });
+
+    togglePause(round);
+    expect(round.status).toBe('paused');
+    expect(isRoundActive(round)).toBe(false);
+
+    togglePause(round);
+    expect(round.status).toBe('running');
+    expect(isRoundActive(round)).toBe(true);
+  });
+
+  it('is a no-op on the result screen — ended never leaves ended', () => {
+    const round = makeRound({ status: 'ended', score: 70 });
+
+    togglePause(round);
+
+    expect(round.status).toBe('ended');
+    expect(round.score).toBe(70);
+  });
+
+  it('a paused round holds the timer — stepRound never decrements it (AC-T12-1)', () => {
+    const state = makeGameState({
+      round: makeRound({ status: 'paused', timeLeftMs: 1234, resolvedCount: 3, scheduledCount: 3 }),
+    });
+
+    stepRound({ state, fixedDtMs: STEP_MS });
+
+    expect(state.round.timeLeftMs).toBe(1234);
+    expect(state.round.status).toBe('paused'); // even all-resolved cannot end a paused round
+  });
+
+  it('a round at its last step ends on the first resumed step, not during pause', () => {
+    const state = makeGameState({ round: makeRound({ status: 'paused', timeLeftMs: STEP_MS }) });
+
+    stepRound({ state, fixedDtMs: STEP_MS });
+    expect(state.round.status).toBe('paused');
+
+    togglePause(state.round);
+    stepRound({ state, fixedDtMs: STEP_MS });
+    expect(state.round.status).toBe('ended');
   });
 });

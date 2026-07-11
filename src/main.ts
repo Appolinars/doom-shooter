@@ -16,6 +16,7 @@ import { validateStaticConfig, PATHS, DEMON_TYPES } from './core/config.ts';
 import { advanceGameStep } from './core/step.ts';
 import { attachPointerInput, type AttachPointerInputParams } from './input/pointer.ts';
 import { createSpawnCursor, pathPointAt } from './systems/spawn.ts';
+import { togglePause } from './systems/round.ts';
 import { loadSprites, validateSpriteKeys, type SpriteImage } from './assets/sprites.ts';
 import { loadBackdrops } from './assets/backdrops.ts';
 import { createAudioBus } from './audio/audio.ts';
@@ -102,6 +103,14 @@ const bootstrap = (): void => {
     backdrop = restartRound({ state, cursor, effects, wiring, pickBackdrop: backdrops.pickRandom, stopFinale: music.stop });
   });
 
+  const resumeButton = document.getElementById('resume');
+  resumeButton?.addEventListener('click', () => togglePause(state.round));
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      togglePause(state.round);
+    }
+  });
+
   const e2eMode = new URLSearchParams(window.location.search).has('e2e');
 
   // In scripted (?e2e) runs, tab focus is environmental and would flake the AC-07 gate — force
@@ -122,12 +131,20 @@ const bootstrap = (): void => {
       frameTimer.record(frameDtMs);
       lastFrameMs = nowMs;
 
+      const paused = state.round.status === 'paused';
       wiring.syncFrame();
-      effects.advance(frameDtMs);
-      effects.pruneExpired();
-      pruneExpiredShots(state, nowMs);
+      // Render-side clocks freeze with the round (AC-T12-1): mid-flight effects and shot
+      // cues hold their frame instead of expiring during the pause.
+      if (!paused) {
+        effects.advance(frameDtMs);
+        effects.pruneExpired();
+        pruneExpiredShots(state, nowMs);
+      }
       if (retryButton) {
         retryButton.style.display = state.round.status === 'ended' ? 'block' : 'none';
+      }
+      if (resumeButton) {
+        resumeButton.style.display = paused ? 'block' : 'none';
       }
 
       render({

@@ -10,7 +10,7 @@ import { ROUND_DURATION_MS, WAVE_SCHEDULE } from './config.ts';
 export type { Demon } from '../entities/demon.ts';
 export type { Shot, ShotOutcome, ShotTarget } from '../entities/shot.ts';
 
-export type RoundStatus = 'running' | 'ended';
+export type RoundStatus = 'running' | 'paused' | 'ended';
 export type WeaponStatus = 'ready' | 'pumping';
 
 /** Current round only — no history (Non-goal N7). */

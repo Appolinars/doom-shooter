@@ -436,6 +436,19 @@ const drawRoundResult = (view: Viewport, state: GameState): void => {
   ctx.fillText(`Final Score ${state.round.score}`, cssWidth / 2, cssHeight / 2 + 20);
 };
 
+/** Pause pass (T-12, AC-T12-1): dims the frozen frame; the RESUME button is DOM (main.ts). */
+const drawPauseOverlay = (view: Viewport): void => {
+  const { ctx, cssWidth, cssHeight } = view;
+  ctx.fillStyle = 'rgba(10, 10, 14, 0.6)';
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f5f5f5';
+  ctx.font = '48px monospace';
+  ctx.fillText('PAUSED', cssWidth / 2, cssHeight / 2 - 40);
+};
+
 const drawFpsOverlay = (view: Viewport, fps: FrameStats): void => {
   const { ctx, cssWidth } = view;
   ctx.textAlign = 'right';
@@ -464,7 +477,8 @@ export interface RenderParams {
  * Draw one frame from the current state. Read-only over `GameState` + the effects store —
  * the renderer never mutates either (data-model access pattern, ADR-0004). Draw order:
  * backdrop → death visuals → demons (back→front) → shot cues → splats → viewmodel →
- * crosshair → HUD → round-result overlay (when ended) → FPS overlay.
+ * crosshair → HUD → round-result overlay (when ended) → pause overlay (when paused) →
+ * FPS overlay.
  */
 export const render = ({ state, view, crosshair, fps, sprites, effects, backdrop }: RenderParams): void => {
   drawBackground(view, backdrop);
@@ -483,6 +497,9 @@ export const render = ({ state, view, crosshair, fps, sprites, effects, backdrop
   drawHud(view, state, viewmodelVisible);
   if (state.round.status === 'ended') {
     drawRoundResult(view, state);
+  }
+  if (state.round.status === 'paused') {
+    drawPauseOverlay(view);
   }
   if (fps) {
     drawFpsOverlay(view, fps);
