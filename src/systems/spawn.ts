@@ -60,6 +60,7 @@ const spawnDemon = ({ cursor, pathId, typeId }: { cursor: SpawnCursor; pathId: n
     id: cursor.nextDemonId++,
     typeId,
     pathId,
+    hp: DEMON_TYPES_BY_ID[typeId]!.maxHp,
     progress: 0,
     x: start.x,
     y: start.y,

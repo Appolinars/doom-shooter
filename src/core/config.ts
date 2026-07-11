@@ -35,7 +35,7 @@ export const ROUND_DURATION_MS = 60_000;
  */
 export const RELOAD_DURATION_MS = 1_500;
 
-export type DemonName = 'fast' | 'brute';
+export type DemonName = 'fast' | 'brute' | 'baron';
 
 export interface DemonType {
   id: number;
@@ -44,6 +44,8 @@ export interface DemonType {
   speed: number;
   /** AC-03 flat points awarded on kill. */
   pointValue: number;
+  /** Shots to kill (game-feel ADR-0001): demons spawn with hp = maxHp. */
+  maxHp: number;
   /** Key into the sprite atlas (T-10). */
   spriteKey: string;
 }
@@ -70,10 +72,14 @@ export interface SpawnSlot {
   pathId: number;
 }
 
-/** Two MVP types: fast/low-point and slow/high-point (PRD §8 default). */
+/**
+ * HP tiers per game-feel PRD §8: fast=1, brute=2, baron=4. Baron pointValue and
+ * speed are placeholders — TODO tuning (game-feel PRD §8 OQ "HP-tier balance").
+ */
 export const DEMON_TYPES: readonly DemonType[] = [
-  { id: 1, name: 'fast', speed: 0.25, pointValue: 10, spriteKey: 'demon-fast' },
-  { id: 2, name: 'brute', speed: 0.125, pointValue: 25, spriteKey: 'demon-brute' },
+  { id: 1, name: 'fast', speed: 0.25, pointValue: 10, maxHp: 1, spriteKey: 'demon-fast' },
+  { id: 2, name: 'brute', speed: 0.125, pointValue: 25, maxHp: 2, spriteKey: 'demon-brute' },
+  { id: 3, name: 'baron', speed: 0.09, pointValue: 60, maxHp: 4, spriteKey: 'demon-baron' },
 ];
 
 /**
@@ -107,9 +113,11 @@ const RAW_WAVE_SCHEDULE: readonly SpawnSlot[] = [
   { atMs: 6_500, demonTypeId: 1, pathId: 2 },
   { atMs: 9_000, demonTypeId: 2, pathId: 2 },
   { atMs: 12_000, demonTypeId: 1, pathId: 1 },
+  { atMs: 14_000, demonTypeId: 3, pathId: 2 },
   { atMs: 15_000, demonTypeId: 2, pathId: 1 },
   { atMs: 18_500, demonTypeId: 1, pathId: 2 },
   { atMs: 22_000, demonTypeId: 2, pathId: 2 },
+  { atMs: 24_000, demonTypeId: 3, pathId: 1 },
   { atMs: 26_000, demonTypeId: 1, pathId: 1 },
 ];
 

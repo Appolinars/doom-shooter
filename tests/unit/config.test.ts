@@ -26,13 +26,29 @@ describe('static config lookups (AC-T02-2)', () => {
     expect(PATHS_BY_ID[999]).toBeUndefined();
   });
 
-  it('ships the two MVP demon types: fast/low-point and brute/high-point', () => {
+  it('ships the three demon types: fast/low-point, brute/high-point, baron/top-point', () => {
     const fast = DEMON_TYPES.find((t) => t.name === 'fast');
     const brute = DEMON_TYPES.find((t) => t.name === 'brute');
+    const baron = DEMON_TYPES.find((t) => t.name === 'baron');
     expect(fast).toBeDefined();
     expect(brute).toBeDefined();
+    expect(baron).toBeDefined();
     expect(fast!.speed).toBeGreaterThan(brute!.speed);
+    expect(brute!.speed).toBeGreaterThan(baron!.speed);
     expect(fast!.pointValue).toBeLessThan(brute!.pointValue);
+    expect(brute!.pointValue).toBeLessThan(baron!.pointValue);
+  });
+
+  it('assigns the HP tiers fast=1, brute=2, baron=4 (AC-T01-1)', () => {
+    const maxHpByName = Object.fromEntries(DEMON_TYPES.map((t) => [t.name, t.maxHp]));
+    expect(maxHpByName).toEqual({ fast: 1, brute: 2, baron: 4 });
+  });
+
+  it('keeps maxHp a bounded positive integer on every type (AC-T01-3)', () => {
+    for (const type of DEMON_TYPES) {
+      expect(Number.isInteger(type.maxHp)).toBe(true);
+      expect(type.maxHp).toBeGreaterThan(0);
+    }
   });
 });
 

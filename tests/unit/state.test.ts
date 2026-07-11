@@ -30,7 +30,7 @@ describe('createInitialGameState', () => {
   it('returns a fresh, unshared instance each call', () => {
     const a = createInitialGameState();
     const b = createInitialGameState();
-    a.demons.push({ id: 1, typeId: 1, pathId: 1, progress: 0, x: 0, y: 0, z: 1 });
+    a.demons.push({ id: 1, typeId: 1, pathId: 1, hp: 1, progress: 0, x: 0, y: 0, z: 1 });
 
     expect(b.demons).toHaveLength(0);
     expect(a.round).not.toBe(b.round);

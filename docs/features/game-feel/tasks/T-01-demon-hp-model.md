@@ -7,7 +7,7 @@ priority: P1
 estimate: S
 blocks: [T-02, T-08]
 blocked_by: []
-status: todo
+status: done
 context_budget: 3500
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -44,10 +44,18 @@ Then `0 < hp ≤ maxHp` holds at spawn; the field is a bounded integer.
 
 ## Atomic checklist
 
-- [ ] Step 1: `config.ts` — add `maxHp` to each `DemonType`; add the new 4-HP type (point value placeholder, flagged as tuning debt per PRD §8).
-- [ ] Step 2: `state.ts` / `demon.ts` — add `hp: number` to `Demon`; update the demon factory to take/derive `hp`.
-- [ ] Step 3: `spawn.ts` — set `hp = DEMON_TYPES[typeId].maxHp` when the scheduled demon enters.
-- [ ] Step 4: unit tests — factory sets `hp === maxHp`; each of the 3 types resolves the expected `maxHp`; `hurt` helper (`hp < maxHp`) if extracted.
+- [x] Step 1: `config.ts` — add `maxHp` to each `DemonType`; add the new 4-HP type (point value placeholder, flagged as tuning debt per PRD §8).
+- [x] Step 2: `state.ts` / `demon.ts` — add `hp: number` to `Demon`; update the demon factory to take/derive `hp`.
+- [x] Step 3: `spawn.ts` — set `hp = DEMON_TYPES[typeId].maxHp` when the scheduled demon enters.
+- [x] Step 4: unit tests — factory sets `hp === maxHp`; each of the 3 types resolves the expected `maxHp`; `hurt` helper (`hp < maxHp`) if extracted.
+
+## Results (2026-07-11)
+
+- New type: `baron` (id 3, maxHp 4, speed 0.09, pointValue 60 — both placeholders, TODO tuning per PRD §8 OQ); `DemonName` union extended.
+- `isDemonHurt` helper extracted in `entities/demon.ts` (hurt derived, never stored — AC-T01-2).
+- Wave schedule extended with 2 baron slots (14 s / 24 s); scheduledCount stays schedule-derived, base spawn tests untouched and green.
+- Ripple fixes to keep boot + typecheck green: placeholder baron pixel-art in `demon-art.ts` (validateSpriteKeys would throw at boot otherwise; replaced by authored files in T-07), baron color in `canvas2d.ts`, `hp` in main.ts `spawnStress`, test factory derives `hp` from `typeId`.
+- 97 unit tests + 5 E2E green; typecheck + lint clean.
 
 ## Edge cases
 
