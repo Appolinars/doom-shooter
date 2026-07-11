@@ -12,9 +12,22 @@ import type { GameState, Round } from '../core/state.ts';
 
 /**
  * The freeze gate the step driver checks before running weapon/spawn/hit each step
- * (Step 2). A `running` round is live; an `ended` one is frozen — no system mutates it.
+ * (Step 2). Only a `running` round is live; `paused` (T-12) and `ended` are both frozen —
+ * no system mutates them.
  */
 export const isRoundActive = (round: Round): boolean => round.status === 'running';
+
+/**
+ * Esc / RESUME toggle (T-12): flips running ⇄ paused. `ended` stays the one-way freeze
+ * (ADR-0004) — Esc on the result screen is a no-op.
+ */
+export const togglePause = (round: Round): void => {
+  if (round.status === 'running') {
+    round.status = 'paused';
+  } else if (round.status === 'paused') {
+    round.status = 'running';
+  }
+};
 
 /** All scheduled demons killed or escaped — the AC-04 all-resolved branch. */
 const allResolved = (round: Round): boolean => round.resolvedCount >= round.scheduledCount;
@@ -30,7 +43,7 @@ const allResolved = (round: Round): boolean => round.resolvedCount >= round.sche
  */
 export const stepRound = ({ state, fixedDtMs }: { state: GameState; fixedDtMs: number }): void => {
   const round = state.round;
-  if (round.status === 'ended') {
+  if (round.status !== 'running') {
     return;
   }
 
