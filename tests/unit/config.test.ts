@@ -39,9 +39,9 @@ describe('static config lookups (AC-T02-2)', () => {
     expect(brute!.pointValue).toBeLessThan(baron!.pointValue);
   });
 
-  it('assigns the HP tiers fast=1, brute=2, baron=4 (AC-T01-1)', () => {
+  it('assigns the HP tiers fast=3 (T-13 rebalance), brute=2, baron=4 (AC-T01-1)', () => {
     const maxHpByName = Object.fromEntries(DEMON_TYPES.map((t) => [t.name, t.maxHp]));
-    expect(maxHpByName).toEqual({ fast: 1, brute: 2, baron: 4 });
+    expect(maxHpByName).toEqual({ fast: 3, brute: 2, baron: 4 });
   });
 
   it('keeps maxHp a bounded positive integer on every type (AC-T01-3)', () => {

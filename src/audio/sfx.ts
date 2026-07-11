@@ -8,8 +8,8 @@ import type { AudioBus, Voice } from './audio.ts';
 
 /**
  * The 9-key SFX contract (assets-manifest §3.1 / §7): `shoot` covers the blast incl.
- * pump/cock (no separate `pump`, no `reload`); `fast` has 1 HP so it never enters the hurt
- * state and has no hurt sound by design.
+ * pump/cock (no separate `pump`, no `reload`); `fast` has no authored hurt sound — since
+ * T-13 it can be hurt (3 HP), but the event stays silent by the wiring's key guard.
  */
 export const SFX_KEYS = [
   'shoot',

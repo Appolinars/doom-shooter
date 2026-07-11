@@ -74,21 +74,25 @@ export const VIEWMODEL_SPRITE_KEYS = [
   'weapon-shotgun-flash-2',
 ] as const;
 
-/** Frames per death animation (§3.2, per-frame files); T-08 slices `deathProgress` over these. */
+/**
+ * Frames per death animation (§3.2, per-frame files); T-08 slices `deathProgress` over
+ * these. Uniform 3 since T-13: the early death frames moved into the hurt slots.
+ */
 export const DEATH_FRAME_COUNTS: Readonly<Record<DemonName, number>> = {
-  fast: 5,
-  brute: 5,
-  baron: 4,
+  fast: 3,
+  brute: 3,
+  baron: 3,
 };
 
 /**
- * Hurt steps actually authored per demon (§3.2): `fast` has 1 HP so no hurt frame by design;
- * `baron` deliberately ships a single hurt-1 shared across hp 3/2/1 via nearest-step fallback.
+ * Hurt steps actually authored per demon (§3.2, remapped in T-13): `fast` (3 HP) and
+ * `baron` (4 HP) ship hurt-2 + hurt-1; baron's hp 3 resolves to hurt-2 via the
+ * nearest-step fallback.
  */
 const AUTHORED_HURT_STEPS: Readonly<Record<DemonName, readonly number[]>> = {
-  fast: [],
+  fast: [1, 2],
   brute: [1],
-  baron: [1],
+  baron: [1, 2],
 };
 
 export const hurtFrameKey = ({ name, hpRemaining }: { name: DemonName; hpRemaining: number }): string =>

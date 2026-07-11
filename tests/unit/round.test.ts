@@ -72,7 +72,7 @@ describe('AC-T08-2 — same-step final kill included before freeze (PRD AC-04b)'
     // One scheduled demon, one loaded shell, timer about to expire this step. The step
     // runs in §6 Flow 4 order: weapon (→ hit → score) resolves the kill, THEN stepRound
     // sees resolvedCount === scheduledCount and freezes with the point already added.
-    const demon = makeDemon({ id: 1, typeId: 1, x: 100, y: 100 });
+    const demon = makeDemon({ id: 1, typeId: 1, hp: 1, x: 100, y: 100 });
     const pointValue = DEMON_TYPES_BY_ID[1]!.pointValue;
     const state = makeGameState({
       round: makeRound({ scheduledCount: 1, resolvedCount: 0, score: 0, timeLeftMs: STEP_MS }),

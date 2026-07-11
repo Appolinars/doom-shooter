@@ -128,18 +128,23 @@ describe('T-07 — external sprite files through the same atlas (AC-T07-1)', () 
     expect(consoleError).toHaveBeenCalledTimes(2); // once per failed file, never per frame
   });
 
-  it('SPRITE_FILES matches the manifest §7 key contract', () => {
+  it('SPRITE_FILES matches the manifest §7 key contract (T-13 remap)', () => {
     const keys = Object.keys(SPRITE_FILES);
-    expect(keys).toHaveLength(25);
+    expect(keys).toHaveLength(23);
     for (const key of VIEWMODEL_SPRITE_KEYS) {
       expect(SPRITE_FILES[key]).toBe(`assets/sprites/${key}.png`);
     }
-    expect(DEATH_FRAME_COUNTS).toEqual({ fast: 5, brute: 5, baron: 4 });
-    expect(keys).toContain('demon-baron-death-4');
-    expect(keys).not.toContain('demon-baron-death-5');
+    expect(DEATH_FRAME_COUNTS).toEqual({ fast: 3, brute: 3, baron: 3 });
+    expect(keys).toContain('demon-baron-death-3');
+    expect(keys).not.toContain('demon-baron-death-4');
+    expect(keys).not.toContain('demon-brute-death-4');
+    expect(keys).not.toContain('demon-fast-death-4');
+    expect(keys).toContain('demon-fast-hurt-1');
+    expect(keys).toContain('demon-fast-hurt-2');
     expect(keys).toContain('demon-brute-hurt-1');
+    expect(keys).not.toContain('demon-brute-hurt-2');
     expect(keys).toContain('demon-baron-hurt-1');
-    expect(keys.some((key) => key.startsWith('demon-fast-hurt'))).toBe(false); // 1 HP — no hurt
+    expect(keys).toContain('demon-baron-hurt-2');
   });
 });
 

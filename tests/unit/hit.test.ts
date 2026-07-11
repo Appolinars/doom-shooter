@@ -50,8 +50,8 @@ describe('findFrontMostHit — front-most by z (PRD AC-06)', () => {
 
 describe('AC-T07-1 — resolveFire kills only the front-most demon', () => {
   it('removes the nearest demon and leaves the one behind it live', () => {
-    const far = at({ id: 1, z: 0.9 });
-    const near = at({ id: 2, z: 0.1 });
+    const far = at({ id: 1, z: 0.9, hp: 1 });
+    const near = at({ id: 2, z: 0.1, hp: 1 });
     const state = makeGameState({ demons: [far, near] });
 
     resolveFire({ state, fire: makeFireIntent(AIM) });
@@ -62,8 +62,8 @@ describe('AC-T07-1 — resolveFire kills only the front-most demon', () => {
 });
 
 describe('AC-T07-2 — score adds exactly the killed type value (PRD AC-03)', () => {
-  it('adds the fast type pointValue on a fast kill', () => {
-    const state = makeGameState({ demons: [at({ typeId: 1 })] });
+  it('adds the fast type pointValue on the killing shot', () => {
+    const state = makeGameState({ demons: [at({ typeId: 1, hp: 1 })] });
 
     resolveFire({ state, fire: makeFireIntent(AIM) });
 
@@ -110,7 +110,7 @@ describe('AC-T07-3 — clean miss', () => {
 
 describe('resolveFire — Shot feedback cue', () => {
   it('appends a kill Shot with the target captured at the fired coordinates', () => {
-    const state = makeGameState({ demons: [at({ id: 1, z: 0.5 })] });
+    const state = makeGameState({ demons: [at({ id: 1, z: 0.5, hp: 1 })] });
 
     resolveFire({ state, fire: makeFireIntent({ ...AIM, atMs: 100 }) });
 
@@ -138,6 +138,24 @@ describe('AC-T02-1 — multi-shot decrement (PRD AC-03)', () => {
     expect(state.round.score).toBe(0);
     expect(state.round.resolvedCount).toBe(0);
     expect(state.shots.at(-1)?.outcome).toBe('hit');
+  });
+
+  it('a 3-HP fast survives two hits as wound states, dies on the third (AC-T13-1)', () => {
+    const fast = at({ id: 1, typeId: 1 });
+    const state = makeGameState({ demons: [fast] });
+
+    resolveFire({ state, fire: makeFireIntent(AIM) });
+    expect(fast.hp).toBe(2);
+    expect(state.shots.at(-1)?.outcome).toBe('hit');
+
+    resolveFire({ state, fire: makeFireIntent(AIM) });
+    expect(fast.hp).toBe(1);
+    expect(state.shots.at(-1)?.outcome).toBe('hit');
+
+    resolveFire({ state, fire: makeFireIntent(AIM) });
+    expect(state.demons).toHaveLength(0);
+    expect(state.shots.at(-1)?.outcome).toBe('kill');
+    expect(state.round.score).toBe(DEMON_TYPES_BY_ID[1]!.pointValue);
   });
 
   it('a 4-HP baron takes four shots to score, never scoring per hit (AC-T02-3)', () => {

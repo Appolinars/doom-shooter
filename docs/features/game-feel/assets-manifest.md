@@ -22,7 +22,7 @@ ticket: "N/A (personal pet-project)"
 
 | Input       | Value                                                                    | Source                          |
 | ----------- | ------------------------------------------------------------------------ | ------------------------------- |
-| Demon types | `fast` = 1 HP, `brute` = 2 HP, **+ new 4-HP type**                       | ADR-0001, PRD §8                |
+| Demon types | `fast` = 3 HP (T-13; PRD §8 default was 1), `brute` = 2 HP, **+ new 4-HP type** | ADR-0001, PRD §8, T-13    |
 | Hurt frames | **per-HP-step** (not one shared)                                         | PRD §8 (resolved), SAD §11      |
 | SFX         | `shoot` (incl. pump/cock — **no separate pump sound**); **per-demon** spawn/hurt/death (9 keys, WAV); no reload | amended 2026-07-11 |
 | Backdrops   | **≥ 2**, random pick per round + on retry                                | PRD US-06, AC-10, T-07 AC-T07-3 |
@@ -77,7 +77,7 @@ Keys are the **exact** `play(key)` **strings** T-05 Step 3 registers. **Amended 
 | `demon-baron-hurt`   | `audio/demon-baron-hurt.wav`   | audio | Baron takes non-lethal hit (AC-03). **Src:** Freedoom monster pain (`DSDMPAIN`).    |
 | `demon-baron-death`  | `audio/demon-baron-death.wav`  | audio | Baron killed (AC-04). **Src:** Freedoom `SARG` death (`DSSGTDTH`).                  |
 
-`fast` (1 HP) never enters the hurt state, so it has **no hurt sound** by design (mirrors its missing hurt sprite). These 9 keys live in the SFX map (T-05), a separate registry from the sprite atlas — a monster's audio `demon-brute-death` and its sprite `demon-brute-death-1..5` do not collide.
+`fast` has **no authored hurt sound**: since T-13 it does enter the hurt state (3 HP, hurt sprites), but the audio event stays silent — the wiring key guard drops the unauthored `demon-fast-hurt` key. These 9 keys live in the SFX map (T-05), a separate registry from the sprite atlas — a monster's audio `demon-brute-death` and its sprite `demon-brute-death-1..5` do not collide.
 
 - **Format note:** **WAV**, decoded by `decodeAudioData` in all target browsers (Chrome/Firefox/Safari). Doom `DS*` lumps are tiny (mono ~11 kHz, sub-second) → a few KB each, so WAV's lack of compression is irrelevant here. No conversion step, no extra tooling.
 - **Voice cap:** playback is capped by the T-04 voice pool; the manifest imposes no per-key limit.
@@ -102,21 +102,24 @@ Fire→pump→ready cycle on the render clock: `idle`+`flash-1`→`flash-2` (fla
 | `weapon-shotgun-flash-2`| `sprites/weapon-shotgun-flash-2.png`| single | png  | 1      | 58×55     | Muzzle-flash overlay, brighter/larger (2nd frame). **Src:** Freedoom `SHTFB0`. Fail-soft-optional. |
 
 
-**Demon sprites** (full / hurt / death). `fast` (maxHp 1) is one-shot → **no hurt frame**; `brute` (maxHp 2) → one hurt frame; `baron` (maxHp 4) → **one shared hurt frame** (author chose not to draw per-step art — the render-side per-HP lookup for `hp 3/2/1` falls back to the single `demon-baron-hurt-1` via nearest-frame, §3.2 note). Sprites are Doom-sourced, so pixel sizes vary per frame (see the Freedoom values below) — the renderer anchors each frame **bottom-centre** (not centre) so the collapsing death frames settle in place instead of floating.
+**Demon sprites** (full / hurt / death). **Remapped in T-13 (2026-07-11):** the early death frames read better as wound states, so they moved into the hurt slots and every death animation is a uniform **3 frames**. `fast` (maxHp **3** since T-13) → hurt-2 + hurt-1 (ex death-1/2); `brute` (maxHp 2) → hurt-1 = ex death-2 (the original hurt frame and death-1 were dropped); `baron` (maxHp 4) → hurt-2 (ex death-1) + the original hurt-1, with hp 3 resolving to hurt-2 via nearest-frame. Sprites are Doom-sourced, so pixel sizes vary per frame (see the Freedoom values below) — the renderer anchors each frame **bottom-centre** (not centre) so the collapsing death frames settle in place instead of floating.
 
 
 Death is authored as **per-frame files** (`demon-<name>-death-<n>`, `n = 1..N`), played back in index order by the render-side effects clock — not a packed strip. Frames may differ in pixel size; the renderer centres each on the demon anchor so size differences don't jitter the animation.
 
 | Key                    | File                               | Type   | Frames | Per-frame px | Target weight | Notes                                                                     |
 | ---------------------- | ---------------------------------- | ------ | ------ | ------------ | ------------- | ------------------------------------------------------------------------- |
-| `demon-fast`           | `sprites/demon-fast.png`           | single | 1      | 48×60        | ≤ 12 KB       | Full (hp 1). **Replaces** current bundled pixel-art key. **Sourced:** Freedoom `TROO` (imp). |
-| `demon-fast-death-{n}` | `sprites/demon-fast-death-{n}.png` | frames | 5      | ~50–65×62→32 | ≤ 12 KB ea.   | Killing-shot animation (hp 0), `n = 1..5`. **Sourced:** Freedoom `TROO` death frames. Collapses (height 62→32). |
+| `demon-fast`           | `sprites/demon-fast.png`           | single | 1      | 48×60        | ≤ 12 KB       | Full (hp 3). **Replaces** current bundled pixel-art key. **Sourced:** Freedoom `TROO` (imp). |
+| `demon-fast-hurt-2`    | `sprites/demon-fast-hurt-2.png`    | single | 1      | ~50×62       | ≤ 12 KB       | Hurt @ hp 2. **T-13:** ex `death-1` (Freedoom `TROO` death frame 1).       |
+| `demon-fast-hurt-1`    | `sprites/demon-fast-hurt-1.png`    | single | 1      | ~55×62       | ≤ 12 KB       | Hurt @ hp 1. **T-13:** ex `death-2` (Freedoom `TROO` death frame 2).       |
+| `demon-fast-death-{n}` | `sprites/demon-fast-death-{n}.png` | frames | 3      | ~55–65×50→32 | ≤ 12 KB ea.   | Killing-shot animation (hp 0), `n = 1..3`. **T-13:** ex `death-3..5`. Collapses. |
 | `demon-brute`          | `sprites/demon-brute.png`          | single | 1      | ~64×64       | ≤ 14 KB       | Full (hp 2). **Sourced:** Freedoom `HEADA1` (BSD-3).                       |
-| `demon-brute-hurt-1`   | `sprites/demon-brute-hurt-1.png`   | single | 1      | ~64×64       | ≤ 14 KB       | Hurt @ hp 1 (bleeding). **Sourced:** Freedoom `HEADG0`.                    |
-| `demon-brute-death-{n}`| `sprites/demon-brute-death-{n}.png`| frames | 5      | ~64–84×64    | ≤ 14 KB ea.   | Killing-shot animation (hp 0). **Sourced:** Freedoom `HEADH0`→`HEADL0` = `-1`..`-5` (last frames ~20 px wider). |
+| `demon-brute-hurt-1`   | `sprites/demon-brute-hurt-1.png`   | single | 1      | ~64×64       | ≤ 14 KB       | Hurt @ hp 1. **T-13:** ex `death-2` (Freedoom `HEADI0`); the original `HEADG0` hurt frame and `death-1` (`HEADH0`) were dropped. |
+| `demon-brute-death-{n}`| `sprites/demon-brute-death-{n}.png`| frames | 3      | ~64–84×64    | ≤ 14 KB ea.   | Killing-shot animation (hp 0), `n = 1..3`. **T-13:** ex `death-3..5` = `HEADJ0`→`HEADL0` (last frames ~20 px wider). |
 | `demon-baron`          | `sprites/demon-baron.png`          | single | 1      | 38×59        | ≤ 16 KB       | Full (hp 4), new 4-HP type.                                               |
-| `demon-baron-hurt-1`   | `sprites/demon-baron-hurt-1.png`   | single | 1      | 38×59        | ≤ 16 KB       | **Single shared hurt frame** — covers hp 3/2/1 via nearest-frame fallback (author drew no per-step art). |
-| `demon-baron-death-{n}`| `sprites/demon-baron-death-{n}.png`| frames | 4      | ~40–48×60→30 | ≤ 16 KB ea.   | Killing-shot animation (hp 0), `n = 1..4`. Collapses (height 60→30).      |
+| `demon-baron-hurt-2`   | `sprites/demon-baron-hurt-2.png`   | single | 1      | ~40×60       | ≤ 16 KB       | Hurt @ hp 2 — and hp 3 via nearest-frame fallback. **T-13:** ex `death-1`. |
+| `demon-baron-hurt-1`   | `sprites/demon-baron-hurt-1.png`   | single | 1      | 38×59        | ≤ 16 KB       | Hurt @ hp 1.                                                               |
+| `demon-baron-death-{n}`| `sprites/demon-baron-death-{n}.png`| frames | 3      | ~40–48×60→30 | ≤ 16 KB ea.   | Killing-shot animation (hp 0), `n = 1..3`. **T-13:** ex `death-2..4`. Collapses (height 60→30). |
 
 
 **Optional FX sprite:**
@@ -127,7 +130,7 @@ Death is authored as **per-frame files** (`demon-<name>-death-<n>`, `n = 1..N`),
 | `fx-hit-splat` | `sprites/hit-splat.png` | sheet | ~3     | 48×48        | ≤ 24 KB       | Impact splat (AC-01). **Fail-soft-optional beyond the norm:** if absent, `render/effects.ts` draws a procedural burst — this file only upgrades it. Lowest priority. |
 
 
-> **Per-HP-step fail-soft (T-07 AC-T07-2, SAD §11 debt):** a missing hurt step falls back to the **nearest available** frame, never an error. This is now a *shipped* design choice, not just a safety net: `baron` (4 HP) provides only `hurt-1`, so the render-side lookup for hp 3 and hp 2 resolves to it via nearest-frame. Authors can likewise ship `full`+`death` first and backfill hurt frames later without blocking.
+> **Per-HP-step fail-soft (T-07 AC-T07-2, SAD §11 debt):** a missing hurt step falls back to the **nearest available** frame, never an error. This is now a *shipped* design choice, not just a safety net: `baron` (4 HP) provides `hurt-2` + `hurt-1`, so the render-side lookup for hp 3 resolves to `hurt-2` via nearest-frame. Authors can likewise ship `full`+`death` first and backfill hurt frames later without blocking.
 
 
 
@@ -210,13 +213,14 @@ Publish **only license-clean** assets (PRD §6.1). The author fills one row per 
 | `sprites/weapon-shotgun-flash-1.png` | Freedoom 0.13.0 `SHTFA0`   | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
 | `sprites/weapon-shotgun-flash-2.png` | Freedoom 0.13.0 `SHTFB0`   | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
 | `sprites/demon-fast.png`         | Freedoom 0.13.0 `TROO` (imp) | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
-| `sprites/demon-fast-death-1..5.png` | Freedoom 0.13.0 `TROO` death | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
+| `sprites/demon-fast-hurt-1..2.png` | Freedoom 0.13.0 `TROO` death frames 2/1 (T-13 remap) | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
+| `sprites/demon-fast-death-1..3.png` | Freedoom 0.13.0 `TROO` death frames 3–5 (T-13 remap) | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
 | `sprites/demon-brute.png`        | Freedoom 0.13.0 `HEADA1` | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
-| `sprites/demon-brute-hurt-1.png` | Freedoom 0.13.0 `HEADG0` | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
-| `sprites/demon-brute-death-1..5.png` | Freedoom 0.13.0 `HEADH0`→`HEADL0` | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
+| `sprites/demon-brute-hurt-1.png` | Freedoom 0.13.0 `HEADI0` (T-13 remap; ex `HEADG0` dropped) | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
+| `sprites/demon-brute-death-1..3.png` | Freedoom 0.13.0 `HEADJ0`→`HEADL0` (T-13 remap) | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
 | `sprites/demon-baron.png`        | Freedoom 0.13.0 `SARG` | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
-| `sprites/demon-baron-hurt-1.png` | Freedoom 0.13.0 `SARG` | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
-| `sprites/demon-baron-death-1..4.png` | Freedoom 0.13.0 `SARG` | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
+| `sprites/demon-baron-hurt-1..2.png` | Freedoom 0.13.0 `SARG` (hurt-2 = ex death-1, T-13 remap) | BSD-3-Clause | y (Freedoom credit) | n | Maksym / 2026-07-11 |
+| `sprites/demon-baron-death-1..3.png` | Freedoom 0.13.0 `SARG` death frames 2–4 (T-13 remap) | BSD-3-Clause | y (Freedoom credit) | y (resized) | Maksym / 2026-07-11 |
 | `sprites/hit-splat.png`          |                       |          |                       |           |                    |
 | `backdrops/backdrop-1.webp`      | CC0 — OpenGameArt/itch _(add exact URL)_ | CC0 | n | y (→webp) | Maksym / 2026-07-11 |
 | `backdrops/backdrop-2.webp`      | CC0 — OpenGameArt/itch _(add exact URL)_ | CC0 | n | y (→webp) | Maksym / 2026-07-11 |
@@ -228,9 +232,9 @@ Publish **only license-clean** assets (PRD §6.1). The author fills one row per 
 
 These strings are the shared contract between this manifest, the file names, and the code. Renaming any of them requires editing **all** of manifest key + file name + the consuming module together.
 
-- **T-05** `play(key)` **set (9):** `shoot` (incl. pump/cock) · `demon-fast-spawn` · `demon-fast-death` · `demon-brute-spawn` · `demon-brute-hurt` · `demon-brute-death` · `demon-baron-spawn` · `demon-baron-hurt` · `demon-baron-death`. **No `pump`** (folded into `shoot`), **no `reload`**; `fast` has no hurt sound (1 HP).
+- **T-05** `play(key)` **set (9):** `shoot` (incl. pump/cock) · `demon-fast-spawn` · `demon-fast-death` · `demon-brute-spawn` · `demon-brute-hurt` · `demon-brute-death` · `demon-baron-spawn` · `demon-baron-hurt` · `demon-baron-death`. **No `pump`** (folded into `shoot`), **no `reload`**; `fast` has no authored hurt sound (its T-13 hurt states stay silent).
 - **T-07 viewmodel atlas keys:** `weapon-shotgun-idle` · `weapon-shotgun-pump-1` · `weapon-shotgun-pump-2` · `weapon-shotgun-pump-3` · `weapon-shotgun-flash-1` · `weapon-shotgun-flash-2`. **No `fire` frame** (fire = idle + flash overlay); no reload; no ammo/magazine. Filenames = keys (`weapon-shotgun-<key>.png`).
-- **T-07 demon atlas keys:** `demon-fast` · `demon-fast-death-{n}` (`1..5`) · `demon-brute` · `demon-brute-hurt-1` · `demon-brute-death-{n}` (`1..5`) · `demon-baron` · `demon-baron-hurt-1` · `demon-baron-death-{n}` (`1..4`). `fast` has no hurt (1 HP); `baron` has a single `hurt-1` shared across hp 3/2/1 (nearest-frame fallback).
+- **T-07 demon atlas keys (T-13 remap):** `demon-fast` · `demon-fast-hurt-{1,2}` · `demon-fast-death-{n}` (`1..3`) · `demon-brute` · `demon-brute-hurt-1` · `demon-brute-death-{n}` (`1..3`) · `demon-baron` · `demon-baron-hurt-{1,2}` · `demon-baron-death-{n}` (`1..3`). Baron hp 3 resolves to `hurt-2` (nearest-frame fallback); fast hurt states are sprite-only (no hurt sound).
 - **Demon full-frame keys must equal** `DemonType.spriteKey` in `src/core/config.ts` (`demon-fast`, `demon-brute`, and the new `demon-baron`) — `validateSpriteKeys` (`src/assets/sprites.ts`) asserts this at boot.
 - **T-07 optional FX key:** `fx-hit-splat`.
 - **Backdrop keys:** registered as a set in `src/assets/backdrops.ts`; code depends on the *set*, not individual names (names exist for the §6 license table).

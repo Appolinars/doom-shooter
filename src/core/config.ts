@@ -84,11 +84,12 @@ export interface SpawnSlot {
 }
 
 /**
- * HP tiers per game-feel PRD §8: fast=1, brute=2, baron=4. Baron pointValue and
- * speed are placeholders — TODO tuning (game-feel PRD §8 OQ "HP-tier balance").
+ * HP tiers: fast=3 (T-13 rebalance — the PRD §8 default was 1; raised so its remapped
+ * hurt frames are reachable), brute=2, baron=4. Baron pointValue and speed are
+ * placeholders — TODO tuning (game-feel PRD §8 OQ "HP-tier balance").
  */
 export const DEMON_TYPES: readonly DemonType[] = [
-  { id: 1, name: 'fast', speed: 0.25, pointValue: 10, maxHp: 1, spriteKey: 'demon-fast' },
+  { id: 1, name: 'fast', speed: 0.25, pointValue: 10, maxHp: 3, spriteKey: 'demon-fast' },
   { id: 2, name: 'brute', speed: 0.125, pointValue: 25, maxHp: 2, spriteKey: 'demon-brute' },
   { id: 3, name: 'baron', speed: 0.09, pointValue: 60, maxHp: 4, spriteKey: 'demon-baron' },
 ];

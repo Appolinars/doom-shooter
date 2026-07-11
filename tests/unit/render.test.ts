@@ -276,14 +276,14 @@ describe('T-08 — hurt frame selection by hp (AC-T08-2)', () => {
 describe('T-08 — death + splat passes from the effects store (AC-T08-2, PRD AC-01/AC-04)', () => {
   it('slices the death animation frame from deathProgress (mid-anim → middle frame)', () => {
     const view = makeStubViewport();
-    const sprites = atlasWith(['demon-brute-death-1', 'demon-brute-death-3']);
+    const sprites = atlasWith(['demon-brute-death-1', 'demon-brute-death-2']);
     const effects = createEffectsStore();
     effects.spawnDeath({ typeId: 2, x: 500, y: 500, z: 0.5 });
-    effects.advance(DEATH_ANIM_MS / 2); // progress 0.5 of 5 frames → frame 3
+    effects.advance(DEATH_ANIM_MS / 2); // progress 0.5 of 3 frames → frame 2
 
     render({ state: makeGameState(), view, sprites, effects });
 
-    expect(sprites.requested).toContain('demon-brute-death-3');
+    expect(sprites.requested).toContain('demon-brute-death-2');
   });
 
   it('falls back to the nearest earlier death frame, then a placeholder circle', () => {

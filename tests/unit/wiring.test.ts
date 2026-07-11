@@ -73,7 +73,7 @@ describe('AC-T09-1 — event → SFX + effect pairs', () => {
     expect(playSfx).toHaveBeenCalledTimes(2);
   });
 
-  it('guards non-contract demon keys: a hurt fast demon plays no hurt SFX (1 HP, no key)', () => {
+  it('guards non-contract demon keys: a hurt fast demon plays no hurt SFX (no authored key)', () => {
     const { state, playSfx, wiring } = makeWiring();
     state.shots.push(makeShot({ outcome: 'hit', target: { typeId: 1, x: 0, y: 0, z: 0 } }));
 
