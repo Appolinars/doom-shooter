@@ -7,7 +7,7 @@ priority: P1
 estimate: M
 blocks: [T-05]
 blocked_by: []
-status: todo
+status: done
 context_budget: 4500
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -48,11 +48,11 @@ Then a `musicGain` node exists under `masterGain` with no source connected, and 
 
 ## Atomic checklist
 
-- [ ] Step 1: `audio.ts` — create suspended `AudioContext`; build `masterGain → sfxGain`; create reserved `musicGain → masterGain` (no source).
-- [ ] Step 2: `armOnFirstGesture()` — idempotent `resume()` on the first `pointerdown`/`click`; expose `isArmed()`.
-- [ ] Step 3: voice-pool accounting — cap constant + active-voice tracking + drop policy (documented).
-- [ ] Step 4: fail-soft guards — if `AudioContext` is unavailable, the module degrades to all-silent no-ops (never throws).
-- [ ] Step 5: unit tests — arm-once idempotency; pre-arm play = no-op/no-throw; voice cap under a burst; `musicGain` present + unconnected. (Mock/stub Web Audio nodes.)
+- [x] Step 1: `audio.ts` — create suspended `AudioContext`; build `masterGain → sfxGain`; create reserved `musicGain → masterGain` (no source).
+- [x] Step 2: `armOnFirstGesture()` — idempotent `resume()` on the first `pointerdown`/`click`; expose `isArmed()`.
+- [x] Step 3: voice-pool accounting — cap constant + active-voice tracking + drop policy (documented: steal-oldest, `VOICE_CAP = 8`).
+- [x] Step 4: fail-soft guards — if `AudioContext` is unavailable, the module degrades to all-silent no-ops (never throws).
+- [x] Step 5: unit tests — arm-once idempotency; pre-arm play = no-op/no-throw; voice cap under a burst; `musicGain` present + unconnected. (Mock/stub Web Audio nodes.)
 
 ## Edge cases
 
