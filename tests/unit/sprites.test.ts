@@ -2,6 +2,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   loadSprites,
   validateSpriteKeys,
+  resolveHurtSprite,
+  hurtFrameKey,
+  deathFrameKey,
+  SPRITE_FILES,
+  VIEWMODEL_SPRITE_KEYS,
+  DEATH_FRAME_COUNTS,
+  type SpriteAtlas,
   type SpriteImage,
 } from '../../src/assets/sprites.ts';
 import type { PixelArt } from '../../src/assets/demon-art.ts';
@@ -26,7 +33,7 @@ describe('loadSprites — ready-signal (AC-T10 loader)', () => {
       return fakeImage('x');
     });
 
-    const { atlas, loaded } = loadSprites({ art: stubArt, rasterize });
+    const { atlas, loaded } = loadSprites({ art: stubArt, rasterize, files: {} });
 
     expect(atlas.ready).toBe(false);
     expect(atlas.get('demon-fast')).toBeNull();
@@ -41,7 +48,7 @@ describe('loadSprites — ready-signal (AC-T10 loader)', () => {
     const rasterize = async (art: PixelArt): Promise<SpriteImage> =>
       fakeImage(Object.keys(art.palette)[0]!);
 
-    const { atlas, loaded } = loadSprites({ art: stubArt, rasterize });
+    const { atlas, loaded } = loadSprites({ art: stubArt, rasterize, files: {} });
     await loaded;
 
     expect(atlas.get('demon-fast')).not.toBeNull();
@@ -60,13 +67,114 @@ describe('loadSprites — fail-soft (AC-T10-2)', () => {
       return fakeImage('brute');
     };
 
-    const { atlas, loaded } = loadSprites({ art: stubArt, rasterize });
+    const { atlas, loaded } = loadSprites({ art: stubArt, rasterize, files: {} });
     await loaded;
 
     expect(atlas.ready).toBe(true); // never rejects — a bad asset must not crash boot
     expect(atlas.get('demon-fast')).toBeNull(); // failed → placeholder at draw time
     expect(atlas.get('demon-brute')).not.toBeNull();
     expect(consoleError).toHaveBeenCalledOnce();
+  });
+});
+
+describe('T-07 — external sprite files through the same atlas (AC-T07-1)', () => {
+  const rasterize = async (art: PixelArt): Promise<SpriteImage> =>
+    fakeImage(`art:${Object.keys(art.palette)[0]!}`);
+
+  it('loads a file key and exposes it via atlas.get', async () => {
+    const loadImage = vi.fn(async (url: string): Promise<SpriteImage> => fakeImage(url));
+    const { atlas, loaded } = loadSprites({
+      art: stubArt,
+      rasterize,
+      files: { 'weapon-shotgun-idle': 'assets/sprites/weapon-shotgun-idle.png' },
+      loadImage,
+    });
+    await loaded;
+
+    expect(atlas.get('weapon-shotgun-idle')).toEqual(fakeImage('assets/sprites/weapon-shotgun-idle.png'));
+    expect(loadImage).toHaveBeenCalledOnce();
+  });
+
+  it('a loaded file wins over the bundled pixel art for the same key', async () => {
+    const { atlas, loaded } = loadSprites({
+      art: stubArt,
+      rasterize,
+      files: { 'demon-fast': 'assets/sprites/demon-fast.png' },
+      loadImage: async (url) => fakeImage(`file:${url}`),
+    });
+    await loaded;
+
+    expect(atlas.get('demon-fast')).toEqual(fakeImage('file:assets/sprites/demon-fast.png'));
+  });
+
+  it('a missing file logs once and falls back to the pixel art / placeholder path', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { atlas, loaded } = loadSprites({
+      art: stubArt,
+      rasterize,
+      files: {
+        'demon-fast': 'assets/sprites/demon-fast.png',
+        'weapon-shotgun-idle': 'assets/sprites/weapon-shotgun-idle.png',
+      },
+      loadImage: async () => {
+        throw new Error('404');
+      },
+    });
+    await loaded;
+
+    expect(atlas.ready).toBe(true);
+    expect(atlas.get('demon-fast')).toEqual(fakeImage('art:r')); // bundled art still covers it
+    expect(atlas.get('weapon-shotgun-idle')).toBeNull(); // no art either → placeholder at draw
+    expect(consoleError).toHaveBeenCalledTimes(2); // once per failed file, never per frame
+  });
+
+  it('SPRITE_FILES matches the manifest §7 key contract', () => {
+    const keys = Object.keys(SPRITE_FILES);
+    expect(keys).toHaveLength(25);
+    for (const key of VIEWMODEL_SPRITE_KEYS) {
+      expect(SPRITE_FILES[key]).toBe(`assets/sprites/${key}.png`);
+    }
+    expect(DEATH_FRAME_COUNTS).toEqual({ fast: 5, brute: 5, baron: 4 });
+    expect(keys).toContain('demon-baron-death-4');
+    expect(keys).not.toContain('demon-baron-death-5');
+    expect(keys).toContain('demon-brute-hurt-1');
+    expect(keys).toContain('demon-baron-hurt-1');
+    expect(keys.some((key) => key.startsWith('demon-fast-hurt'))).toBe(false); // 1 HP — no hurt
+  });
+});
+
+describe('T-07 — resolveHurtSprite nearest-step fallback (AC-T07-2)', () => {
+  const baron: DemonType = { id: 3, name: 'baron', speed: 0.09, pointValue: 60, maxHp: 4, spriteKey: 'demon-baron' };
+
+  const atlasWith = (images: Record<string, SpriteImage>): SpriteAtlas => ({
+    get: (spriteKey) => images[spriteKey] ?? null,
+    ready: true,
+  });
+
+  it('returns the exact hurt step when authored', () => {
+    const atlas = atlasWith({
+      [hurtFrameKey({ name: 'baron', hpRemaining: 2 })]: fakeImage('hurt-2'),
+      [hurtFrameKey({ name: 'baron', hpRemaining: 1 })]: fakeImage('hurt-1'),
+    });
+    expect(resolveHurtSprite({ atlas, type: baron, hp: 2 })).toEqual(fakeImage('hurt-2'));
+  });
+
+  it('falls back to the nearest lower step for a missing one (baron hp 3 → hurt-1)', () => {
+    const atlas = atlasWith({
+      [hurtFrameKey({ name: 'baron', hpRemaining: 1 })]: fakeImage('hurt-1'),
+    });
+    expect(resolveHurtSprite({ atlas, type: baron, hp: 3 })).toEqual(fakeImage('hurt-1'));
+  });
+
+  it('falls back to the full frame when no hurt step exists, and null when nothing does', () => {
+    const atlas = atlasWith({ 'demon-baron': fakeImage('full') });
+    expect(resolveHurtSprite({ atlas, type: baron, hp: 2 })).toEqual(fakeImage('full'));
+
+    expect(resolveHurtSprite({ atlas: atlasWith({}), type: baron, hp: 2 })).toBeNull();
+  });
+
+  it('deathFrameKey builds the manifest key scheme', () => {
+    expect(deathFrameKey({ name: 'fast', frame: 3 })).toBe('demon-fast-death-3');
   });
 });
 
