@@ -15,7 +15,7 @@ Statuses: `todo` → `in_progress` → `in_review` → `done` (or `blocked`).
 | [T-01](./T-01-demon-hp-model.md) | Demon HP model | 1 | S | — | done | local merge |
 | [T-02](./T-02-hit-damage.md) | HP damage inline in hit path | 1 | S | T-01 | done | local merge |
 | [T-03](./T-03-pump-gate.md) | Pump gate (fixed-step weapon state) | 1 | S | — | done | local merge |
-| [T-04](./T-04-web-audio-graph.md) | Web Audio graph, arm-on-gesture | 2 | M | — | todo | — |
+| [T-04](./T-04-web-audio-graph.md) | Web Audio graph, arm-on-gesture | 2 | M | — | done | local merge |
 | [T-05](./T-05-sfx-load-play.md) | SFX load/decode + play, fail-soft | 2 | S | T-04 | todo | — |
 | [T-06](./T-06-effects-store.md) | Render-side effects store | 3 | M | — | todo | — |
 | [T-07](./T-07-sprite-backdrop-assets.md) | Sprite / backdrop / demon-art assets | 3 | S | — | todo | — |
