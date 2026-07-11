@@ -7,7 +7,7 @@ priority: P1
 estimate: M
 blocks: [T-10]
 blocked_by: [T-02, T-05, T-08]
-status: todo
+status: done
 context_budget: 5000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -49,11 +49,11 @@ Then the effects store is cleared and the new round starts clean — no finalize
 
 ## Atomic checklist
 
-- [ ] Step 1: register the first-gesture listener → `armOnFirstGesture()` (T-04); ensure it only arms once.
-- [ ] Step 2: event → SFX map — `play('shoot')` on fire (no separate pump sound); `play('demon-<type>-spawn')` on spawn; `play('demon-<type>-hurt')` on non-lethal hit; `play('demon-<type>-death')` on kill — type resolved from the demon (fire/spawn/hit/kill paths, T-02).
-- [ ] Step 3: event → effects — `spawnSplat` on hit, `spawnDeath` on kill, `onFire` for the viewmodel; `advance(dt)` + `pruneExpired()` each frame.
-- [ ] Step 4: "try again" button on round-end → `createInitialGameState()` + `backdrops.pickRandom()` + `effects.clear()`.
-- [ ] Step 5: integration test/harness — 6/6 event→(SFX+FX) fire; retry leaves zero leaked state (score 0, no demons, fresh backdrop, empty effects store).
+- [x] Step 1: register the first-gesture listener → `armOnFirstGesture()` (T-04); ensure it only arms once. *(window-level, so the arming click can be the firing click)*
+- [x] Step 2: event → SFX map — `play('shoot')` on fire (no separate pump sound); `play('demon-<type>-spawn')` on spawn; `play('demon-<type>-hurt')` on non-lethal hit; `play('demon-<type>-death')` on kill — type resolved from the demon (fire/spawn/hit/kill paths, T-02). *(events observed per frame in NEW `src/wiring.ts` by diffing new Shots / new demon ids — zero fixed-step changes, ADR-0004)*
+- [x] Step 3: event → effects — `spawnSplat` on hit, `spawnDeath` on kill, `onFire` for the viewmodel; `advance(dt)` + `pruneExpired()` each frame.
+- [x] Step 4: "try again" button on round-end → `createInitialGameState()` + `backdrops.pickRandom()` + `effects.clear()`. *(DOM `#retry` button in index.html, shown only while ended; `restartRound` also resets the spawn cursor + seen-id sets, in place so all closures see the fresh round)*
+- [x] Step 5: integration test/harness — 6/6 event→(SFX+FX) fire; retry leaves zero leaked state (score 0, no demons, fresh backdrop, empty effects store). *(tests/unit/wiring.test.ts, 9 tests)*
 
 ## Edge cases
 
