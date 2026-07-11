@@ -23,6 +23,19 @@ export const VIRTUAL_HEIGHT = 1000;
 export const PUMP_DURATION_MS = 350;
 
 /**
+ * Visual lifetime of a hit splat on the render layer (game-feel ADR-0004, PRD AC-01).
+ * Aged by the rAF frame delta in the effects store, never the fixed step.
+ */
+export const SHOT_SPLAT_MS = 250;
+
+/**
+ * Death-animation length on the render layer (game-feel ADR-0004, PRD AC-04): the demon
+ * despawns from GameState on the fixed step; the effects store holds the dying visual
+ * this long. ~1 s per the PRD; the renderer (T-08) slices per-demon frames over it.
+ */
+export const DEATH_ANIM_MS = 1000;
+
+/**
  * World-space crosshair hit radius (T-07): a demon is "under the crosshair" when its
  * cached (x, y) is within this distance of the aim point. Constant across depth in the
  * MVP — z-scaling the hitbox to match rendered sprite size is deferred with the 2.5D
