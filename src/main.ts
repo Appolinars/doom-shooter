@@ -20,6 +20,7 @@ import { loadSprites, validateSpriteKeys, type SpriteImage } from './assets/spri
 import { loadBackdrops } from './assets/backdrops.ts';
 import { createAudioBus } from './audio/audio.ts';
 import { loadSfx } from './audio/sfx.ts';
+import { loadMusic } from './audio/music.ts';
 import { createEffectsStore } from './render/effects.ts';
 import { createFeedbackWiring, restartRound } from './wiring.ts';
 
@@ -85,9 +86,10 @@ const bootstrap = (): void => {
   const audioBus = createAudioBus();
   audioBus.armOnFirstGesture(window);
   const sfx = loadSfx({ bus: audioBus });
+  const music = loadMusic({ bus: audioBus });
 
   const effects = createEffectsStore();
-  const wiring = createFeedbackWiring({ state, effects, playSfx: sfx.play });
+  const wiring = createFeedbackWiring({ state, effects, playSfx: sfx.play, onRoundEnd: music.play });
 
   const backdrops = loadBackdrops();
   let backdrop: SpriteImage | null = null;
@@ -97,7 +99,7 @@ const bootstrap = (): void => {
 
   const retryButton = document.getElementById('retry');
   retryButton?.addEventListener('click', () => {
-    backdrop = restartRound({ state, cursor, effects, wiring, pickBackdrop: backdrops.pickRandom });
+    backdrop = restartRound({ state, cursor, effects, wiring, pickBackdrop: backdrops.pickRandom, stopFinale: music.stop });
   });
 
   const e2eMode = new URLSearchParams(window.location.search).has('e2e');
