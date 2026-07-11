@@ -7,7 +7,7 @@ priority: P2
 estimate: S
 blocks: []
 blocked_by: [T-08]
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-11
 owner: Maksym Vakulenko
@@ -61,14 +61,14 @@ guard already drops the unauthored `demon-fast-hurt` key).
 
 ## Atomic checklist
 
-- [ ] Step 1: rename/delete the PNG files in `public/assets/sprites/` per the remap table.
-- [ ] Step 2: `config.ts` — fast `maxHp: 3`; `sprites.ts` — `DEATH_FRAME_COUNTS` all 3,
+- [x] Step 1: rename/delete the PNG files in `public/assets/sprites/` per the remap table.
+- [x] Step 2: `config.ts` — fast `maxHp: 3`; `sprites.ts` — `DEATH_FRAME_COUNTS` all 3,
       `AUTHORED_HURT_STEPS` fast `[1,2]` / baron `[1,2]`; stale "fast never hurts"
       comments updated here + sfx.ts + wiring.ts.
-- [ ] Step 3: assets-manifest §1/§3.2/§6/§7 rows updated to the new names/counts.
-- [ ] Step 4: tests — config tier assert; SPRITE_FILES contract (23 keys, fast-hurt
-      present); hit/step tests pin `hp` where a 1-shot kill is meant; render death-frame
-      slice indices for 3 frames; new fast wound-progression test.
+- [x] Step 3: assets-manifest §1/§3.2/§6/§7 rows updated to the new names/counts.
+- [x] Step 4: tests — config tier assert; SPRITE_FILES contract (23 keys, fast-hurt
+      present); hit/step/round tests pin `hp` where a 1-shot kill is meant; render
+      death-frame slice indices for 3 frames; new fast wound-progression test.
 
 ## Edge cases
 
