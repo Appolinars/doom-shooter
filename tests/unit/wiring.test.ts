@@ -13,8 +13,9 @@ import { makeGameState, makeDemon, makeShot, makeRound, makeWeapon } from '../fa
 const makeWiring = (state = makeGameState()) => {
   const effects = createEffectsStore();
   const playSfx = vi.fn<(key: SfxKey) => void>();
-  const wiring = createFeedbackWiring({ state, effects, playSfx });
-  return { state, effects, playSfx, wiring };
+  const onRoundEnd = vi.fn<() => void>();
+  const wiring = createFeedbackWiring({ state, effects, playSfx, onRoundEnd });
+  return { state, effects, playSfx, onRoundEnd, wiring };
 };
 
 const target = { typeId: 2, x: 400, y: 500, z: 0.4 };
@@ -94,6 +95,52 @@ describe('AC-T09-1 — event → SFX + effect pairs', () => {
     wiring.syncFrame();
 
     expect(playSfx).toHaveBeenCalledTimes(2); // one 'shoot' per distinct shot
+  });
+});
+
+describe('AC-T11-1 / AC-T11-2 — round-end transition fires the finale hook exactly once', () => {
+  it('fires onRoundEnd on the first frame that observes ended, then stays quiet', () => {
+    const { state, onRoundEnd, wiring } = makeWiring();
+
+    wiring.syncFrame();
+    expect(onRoundEnd).not.toHaveBeenCalled();
+
+    state.round.status = 'ended';
+    wiring.syncFrame();
+    wiring.syncFrame();
+    expect(onRoundEnd).toHaveBeenCalledOnce();
+  });
+
+  it('reset() re-arms the hook — the next round end fires it again', () => {
+    const { state, onRoundEnd, wiring } = makeWiring();
+    state.round.status = 'ended';
+    wiring.syncFrame();
+
+    wiring.reset();
+    state.round.status = 'running';
+    wiring.syncFrame();
+    expect(onRoundEnd).toHaveBeenCalledOnce();
+
+    state.round.status = 'ended';
+    wiring.syncFrame();
+    expect(onRoundEnd).toHaveBeenCalledTimes(2);
+  });
+
+  it('omitting onRoundEnd keeps syncFrame safe on round end', () => {
+    const state = makeGameState({ round: makeRound({ status: 'ended' }) });
+    const wiring = createFeedbackWiring({ state, effects: createEffectsStore(), playSfx: vi.fn() });
+
+    expect(() => wiring.syncFrame()).not.toThrow();
+  });
+
+  it('restartRound stops the finale via the stopFinale seam', () => {
+    const state = makeGameState({ round: makeRound({ status: 'ended' }) });
+    const { effects, wiring } = makeWiring(state);
+    const stopFinale = vi.fn<() => void>();
+
+    restartRound({ state, cursor: createSpawnCursor(), effects, wiring, pickBackdrop: () => null, stopFinale });
+
+    expect(stopFinale).toHaveBeenCalledOnce();
   });
 });
 

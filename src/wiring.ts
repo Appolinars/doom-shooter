@@ -23,6 +23,8 @@ export interface CreateFeedbackWiringParams {
   state: GameState;
   effects: EffectsStore;
   playSfx: (key: SfxKey) => void;
+  /** Fired once per `running → ended` transition (T-11: starts the finale music). */
+  onRoundEnd?: () => void;
 }
 
 export interface FeedbackWiring {
@@ -36,10 +38,11 @@ export interface FeedbackWiring {
   reset: () => void;
 }
 
-export const createFeedbackWiring = ({ state, effects, playSfx }: CreateFeedbackWiringParams): FeedbackWiring => {
+export const createFeedbackWiring = ({ state, effects, playSfx, onRoundEnd }: CreateFeedbackWiringParams): FeedbackWiring => {
   // Shots carry no id and are pruned by age — object identity is the stable handle.
   let processedShots = new WeakSet<object>();
   let knownDemonIds = new Set<number>();
+  let roundEndSeen = false;
 
   const playDemonSfx = ({ typeId, event }: { typeId: number; event: 'spawn' | 'hurt' | 'death' }): void => {
     const name = DEMON_TYPES_BY_ID[typeId]?.name;
@@ -81,11 +84,16 @@ export const createFeedbackWiring = ({ state, effects, playSfx }: CreateFeedback
         playDemonSfx({ typeId: demon.typeId, event: 'spawn' });
       }
     }
+    if (state.round.status === 'ended' && !roundEndSeen) {
+      roundEndSeen = true;
+      onRoundEnd?.();
+    }
   };
 
   const reset = (): void => {
     processedShots = new WeakSet<object>();
     knownDemonIds = new Set<number>();
+    roundEndSeen = false;
   };
 
   return { syncFrame, reset };
@@ -98,6 +106,8 @@ export interface RestartRoundParams {
   wiring: FeedbackWiring;
   /** T-07 backdrop reroll; returns the new round's backdrop (or null → black). */
   pickBackdrop: () => CanvasImageSource | null;
+  /** T-11: silences the looping finale so it never plays into the new round. */
+  stopFinale?: () => void;
 }
 
 /**
@@ -113,10 +123,12 @@ export const restartRound = ({
   effects,
   wiring,
   pickBackdrop,
+  stopFinale,
 }: RestartRoundParams): CanvasImageSource | null => {
   Object.assign(state, createInitialGameState());
   Object.assign(cursor, createSpawnCursor());
   effects.clear();
   wiring.reset();
+  stopFinale?.();
   return pickBackdrop();
 };
