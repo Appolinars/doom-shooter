@@ -4,6 +4,10 @@
 // with a decoupled render (ADR-0002). A query-param-gated debug API (?e2e) exposes the live
 // state + a few hooks for the Playwright smoke suite and the NFR perf pass — it is never
 // installed for a normal page load, so the published demo carries no test surface.
+//
+// game-feel T-09 layers the juice on top: audio armed on the first gesture (ADR-0003),
+// event → SFX + effects wiring observed per frame (wiring.ts), a random backdrop per round,
+// and the "try again" button that rebuilds the round with zero leaked state (PRD AC-10).
 
 import { createViewport, resizeToWindow, render, createFrameTimer, type FrameStats } from './render/canvas2d.ts';
 import { startLoop, STEP_MS } from './core/loop.ts';
@@ -12,7 +16,12 @@ import { validateStaticConfig, PATHS, DEMON_TYPES } from './core/config.ts';
 import { advanceGameStep } from './core/step.ts';
 import { attachPointerInput, type AttachPointerInputParams } from './input/pointer.ts';
 import { createSpawnCursor, pathPointAt } from './systems/spawn.ts';
-import { loadSprites, validateSpriteKeys } from './assets/sprites.ts';
+import { loadSprites, validateSpriteKeys, type SpriteImage } from './assets/sprites.ts';
+import { loadBackdrops } from './assets/backdrops.ts';
+import { createAudioBus } from './audio/audio.ts';
+import { loadSfx } from './audio/sfx.ts';
+import { createEffectsStore } from './render/effects.ts';
+import { createFeedbackWiring, restartRound } from './wiring.ts';
 
 /** Visual lifetime of a hit/miss feedback cue before it is pruned (T-11 integration gap). */
 const SHOT_CUE_MS = 250;
@@ -73,6 +82,24 @@ const bootstrap = (): void => {
   const frameTimer = createFrameTimer();
   const spriteLoad = loadSprites();
 
+  const audioBus = createAudioBus();
+  audioBus.armOnFirstGesture(window);
+  const sfx = loadSfx({ bus: audioBus });
+
+  const effects = createEffectsStore();
+  const wiring = createFeedbackWiring({ state, effects, playSfx: sfx.play });
+
+  const backdrops = loadBackdrops();
+  let backdrop: SpriteImage | null = null;
+  void backdrops.loaded.then(() => {
+    backdrop ??= backdrops.pickRandom();
+  });
+
+  const retryButton = document.getElementById('retry');
+  retryButton?.addEventListener('click', () => {
+    backdrop = restartRound({ state, cursor, effects, wiring, pickBackdrop: backdrops.pickRandom });
+  });
+
   const e2eMode = new URLSearchParams(window.location.search).has('e2e');
 
   // In scripted (?e2e) runs, tab focus is environmental and would flake the AC-07 gate — force
@@ -89,15 +116,26 @@ const bootstrap = (): void => {
     update: (fixedDtMs) => advanceGameStep({ state, cursor, fixedDtMs }),
     render: () => {
       const nowMs = performance.now();
-      frameTimer.record(nowMs - lastFrameMs);
+      const frameDtMs = nowMs - lastFrameMs;
+      frameTimer.record(frameDtMs);
       lastFrameMs = nowMs;
+
+      wiring.syncFrame();
+      effects.advance(frameDtMs);
+      effects.pruneExpired();
       pruneExpiredShots(state, nowMs);
+      if (retryButton) {
+        retryButton.style.display = state.round.status === 'ended' ? 'block' : 'none';
+      }
+
       render({
         state,
         view,
         crosshair: input.getCrosshair(),
         fps: frameTimer.stats(),
         sprites: spriteLoad.atlas,
+        effects,
+        backdrop,
       });
     },
   });

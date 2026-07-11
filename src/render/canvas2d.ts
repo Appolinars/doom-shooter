@@ -351,11 +351,12 @@ const drawViewmodel = (
   return true;
 };
 
-const drawShots = (view: Viewport, shots: readonly Shot[]): void => {
+/** With the splat pass active (T-08), the ring cue is redundant — only the miss X remains. */
+const drawShots = (view: Viewport, shots: readonly Shot[], missOnly: boolean): void => {
   const { ctx } = view;
   for (const shot of shots) {
     const { sx, sy } = worldToScreen({ x: shot.aimX, y: shot.aimY }, view);
-    if (shot.outcome !== 'miss') {
+    if (shot.outcome !== 'miss' && !missOnly) {
       ctx.beginPath();
       ctx.arc(sx, sy, 22, 0, Math.PI * 2);
       ctx.lineWidth = 3;
@@ -471,7 +472,7 @@ export const render = ({ state, view, crosshair, fps, sprites, effects, backdrop
     drawDeathVisuals(view, effects, sprites);
   }
   drawDemons(view, state.demons, sprites);
-  drawShots(view, state.shots);
+  drawShots(view, state.shots, Boolean(effects));
   if (effects) {
     drawSplats(view, effects);
   }
