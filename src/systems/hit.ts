@@ -50,15 +50,26 @@ export const findFrontMostHit = ({
 };
 
 /**
- * Resolve one fired shot (weapon.ts's `onFire` contract):
- *   hit  → remove the front-most demon, bump resolvedCount, add its points (score.ts);
+ * Resolve one fired shot (weapon.ts's `onFire` contract), game-feel ADR-0001 inline:
+ *   hit  → front-most demon takes exactly one HP; it stays alive (derived hurt) with
+ *          hp > 0 and the score is untouched;
+ *   kill → the shot removed the last HP: despawn, bump resolvedCount, add its points
+ *          (score.ts) — applyKill fires exactly once per demon, so the non-decreasing
+ *          score invariant holds by construction;
  *   miss → nothing removed, score untouched.
- * Either way a transient Shot records the outcome for the T-09 feedback cue.
+ * Either way a transient Shot records the outcome (+ target) for the T-08/T-09 cues.
  */
 export const resolveFire: FireResolver = ({ state, fire }) => {
   const target = findFrontMostHit({ demons: state.demons, aimX: fire.aimX, aimY: fire.aimY });
 
-  if (target !== null) {
+  if (target === null) {
+    state.shots.push({ firedAtMs: fire.atMs, aimX: fire.aimX, aimY: fire.aimY, outcome: 'miss' });
+    return;
+  }
+
+  target.hp -= 1;
+  const killed = target.hp === 0;
+  if (killed) {
     state.demons = state.demons.filter((demon) => demon.id !== target.id);
     state.round.resolvedCount += 1;
     applyKill({ round: state.round, demonTypeId: target.typeId });
@@ -68,6 +79,7 @@ export const resolveFire: FireResolver = ({ state, fire }) => {
     firedAtMs: fire.atMs,
     aimX: fire.aimX,
     aimY: fire.aimY,
-    outcome: target !== null ? 'hit' : 'miss',
+    outcome: killed ? 'kill' : 'hit',
+    target: { typeId: target.typeId, x: target.x, y: target.y, z: target.z },
   });
 };

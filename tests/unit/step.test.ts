@@ -26,12 +26,13 @@ describe('advanceGameStep', () => {
     expect(state.demons).toHaveLength(0);
     expect(state.round.score).toBe(DEMON_TYPES_BY_ID[1]!.pointValue);
     expect(state.round.resolvedCount).toBe(1);
-    expect(state.shots.at(-1)?.outcome).toBe('hit');
+    expect(state.shots.at(-1)?.outcome).toBe('kill');
     expect(state.fireIntents).toHaveLength(0);
   });
 
   it('AC-04b: a kill on the same step the round resolves still counts before the freeze', () => {
-    const demon = makeDemon({ id: 1, typeId: 2, x: 500, y: 500, z: 0.5 });
+    // hp 1: already-hurt brute, so this single shot is the killing one (T-02).
+    const demon = makeDemon({ id: 1, typeId: 2, hp: 1, x: 500, y: 500, z: 0.5 });
     // Last outstanding demon + a fire on it: killing it makes resolvedCount reach scheduledCount,
     // so the round ends this same step — but the score-add must already be committed.
     const state = makeGameState({
