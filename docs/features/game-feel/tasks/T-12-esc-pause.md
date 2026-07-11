@@ -7,7 +7,7 @@ priority: P2
 estimate: S
 blocks: []
 blocked_by: [T-09]
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-11
 owner: Maksym Vakulenko
@@ -57,16 +57,16 @@ Then no queued fire intent goes off on resume.
 
 ## Atomic checklist
 
-- [ ] Step 1: `state.ts` — `RoundStatus` gains `'paused'`; `round.ts` `stepRound` freezes
+- [x] Step 1: `state.ts` — `RoundStatus` gains `'paused'`; `round.ts` `stepRound` freezes
       (early-return) for any non-`running` status; add `togglePause` (running ⇄ paused,
       `ended` no-op).
-- [ ] Step 2: `step.ts` — while the round is inactive, drop queued fire intents so clicks
+- [x] Step 2: `step.ts` — while the round is inactive, drop queued fire intents so clicks
       during pause (or the result screen) never fire on resume.
-- [ ] Step 3: renderer — `PAUSED` dim overlay pass when `status === 'paused'`.
-- [ ] Step 4: main.ts — Esc keydown → `togglePause`; `#resume` button (index.html) shown
+- [x] Step 3: renderer — `PAUSED` dim overlay pass when `status === 'paused'`.
+- [x] Step 4: main.ts — Esc keydown → `togglePause`; `#resume` button (index.html) shown
       only while paused; freeze the render-side clocks (`effects.advance`, shot-cue prune)
       while paused.
-- [ ] Step 5: unit tests — toggle transitions incl. `ended` no-op; frozen step (timer,
+- [x] Step 5: unit tests — toggle transitions incl. `ended` no-op; frozen step (timer,
       weapon, spawn untouched); intent-drop; paused overlay draw.
 
 ## Edge cases

@@ -23,7 +23,7 @@ Statuses: `todo` → `in_progress` → `in_review` → `done` (or `blocked`).
 | [T-09](./T-09-wiring-and-retry.md) | Wiring in main.ts + retry | 4 | M | T-02, T-05, T-08 | done | local merge |
 | [T-10](./T-10-nfr-ac-e2e.md) | NFR + AC walkthrough / E2E | 4 | M | T-09 | todo | — |
 | [T-11](./T-11-finale-music.md) | Round-end finale music (musicGain seam) | 5 | S | T-09 | done | local merge |
-| [T-12](./T-12-esc-pause.md) | Esc pause + PAUSED overlay | 5 | S | T-09 | todo | — |
+| [T-12](./T-12-esc-pause.md) | Esc pause + PAUSED overlay | 5 | S | T-09 | done | local merge |
 
 **Critical path:** T-01 → T-02 → T-09 → T-10 (and T-07 → T-08 → T-09 → T-10).
 Wave 5 (playtest feedback additions) is off the critical path but should land before the
