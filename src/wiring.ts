@@ -13,8 +13,9 @@ import { SFX_KEYS, type SfxKey } from './audio/sfx.ts';
 import type { EffectsStore } from './render/effects.ts';
 
 /**
- * `demon-fast-hurt` is not an authored key (1 HP — a fast demon never survives a hit),
- * so demon SFX keys are built by template and guarded against the 9-key contract.
+ * `demon-fast-hurt` is not an authored key (a hurt fast demon stays silent — T-13 gave
+ * it 3 HP but no hurt sound), so demon SFX keys are built by template and guarded
+ * against the 9-key contract.
  */
 const asSfxKey = (candidate: string): SfxKey | null =>
   (SFX_KEYS as readonly string[]).includes(candidate) ? (candidate as SfxKey) : null;

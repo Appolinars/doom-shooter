@@ -15,7 +15,7 @@ const step = (state: Parameters<typeof advanceGameStep>[0]['state'], fixedDtMs =
 
 describe('advanceGameStep', () => {
   it('drains a fire intent onto the demon under the crosshair: kill + score in one step', () => {
-    const demon = makeDemon({ id: 7, typeId: 1, x: 500, y: 500, z: 0.5 });
+    const demon = makeDemon({ id: 7, typeId: 1, hp: 1, x: 500, y: 500, z: 0.5 });
     const state = makeGameState({
       demons: [demon],
       fireIntents: [makeFireIntent({ aimX: 500, aimY: 500 })],
