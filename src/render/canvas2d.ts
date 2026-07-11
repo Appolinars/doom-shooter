@@ -3,14 +3,22 @@
 // round-result screen, plus the FPS dev overlay (SAD §7). World space (VIRTUAL_WIDTH ×
 // VIRTUAL_HEIGHT, ADR-0001) is mapped to CSS pixels with the exact inverse of
 // pointer.ts `screenToWorld`, so aim, hit-test and draw share one coordinate system.
+//
+// game-feel T-08 adds the juice passes (ADR-0004), all snapshot-only: backdrop behind
+// everything, per-HP-step hurt frame selection, death visuals + splats read from the
+// effects store, and the first-person viewmodel driven by the weapon status + effects
+// clock. Every pass degrades to the pre-T-08 placeholder when its asset is missing (AC-06).
 
-import type { Demon, GameState, Shot } from '../core/state.ts';
+import type { Demon, GameState, Shot, Weapon } from '../core/state.ts';
 import type { WorldPoint } from '../input/pointer.ts';
-import type { SpriteAtlas, SpriteImage } from '../assets/sprites.ts';
+import { resolveHurtSprite, deathFrameKey, DEATH_FRAME_COUNTS, type SpriteAtlas, type SpriteImage } from '../assets/sprites.ts';
+import { deathProgress, type EffectsStore, type ViewmodelFrame } from './effects.ts';
+import { isDemonHurt } from '../entities/demon.ts';
 import {
   VIRTUAL_WIDTH,
   VIRTUAL_HEIGHT,
   DEMON_TYPES_BY_ID,
+  SHOT_SPLAT_MS,
   type DemonName,
 } from '../core/config.ts';
 
@@ -141,16 +149,43 @@ const demonColor = (typeId: number): string => {
   return name ? DEMON_COLORS[name] : UNKNOWN_DEMON_COLOR;
 };
 
-const spriteKeyFor = (typeId: number): string | null =>
-  DEMON_TYPES_BY_ID[typeId]?.spriteKey ?? null;
-
-const demonSprite = (sprites: SpriteAtlas | null | undefined, typeId: number): SpriteImage | null => {
-  const key = spriteKeyFor(typeId);
-  return key ? (sprites?.get(key) ?? null) : null;
+/**
+ * Frame selection (T-08, AC-T08-2): hurt demons draw their per-HP-step frame with the
+ * nearest-step fallback (T-07); unhurt (or unknown-type) demons draw the full frame.
+ */
+const demonSprite = (sprites: SpriteAtlas | null | undefined, demon: Demon): SpriteImage | null => {
+  if (!sprites) {
+    return null;
+  }
+  const type = DEMON_TYPES_BY_ID[demon.typeId];
+  if (!type) {
+    return null;
+  }
+  if (isDemonHurt(demon)) {
+    return resolveHurtSprite({ atlas: sprites, type, hp: demon.hp });
+  }
+  return sprites.get(type.spriteKey);
 };
 
-const drawBackground = (view: Viewport): void => {
+/** Natural pixel size when the source exposes one (images/canvases do); null for stubs. */
+const imageSize = (image: SpriteImage): { w: number; h: number } | null => {
+  const { width, height } = image as { width?: unknown; height?: unknown };
+  if (typeof width === 'number' && typeof height === 'number' && width > 0 && height > 0) {
+    return { w: width, h: height };
+  }
+  return null;
+};
+
+/**
+ * Backdrop pass (T-08, AC-T07-3): the picked round backdrop stretched full-screen, or the
+ * pre-T-08 dark placeholder scene when none loaded — the black-ish fail-soft path.
+ */
+const drawBackground = (view: Viewport, backdrop?: SpriteImage | null): void => {
   const { ctx, cssWidth, cssHeight } = view;
+  if (backdrop) {
+    ctx.drawImage(backdrop, 0, 0, cssWidth, cssHeight);
+    return;
+  }
   ctx.fillStyle = '#16161a';
   ctx.fillRect(0, 0, cssWidth, cssHeight);
   ctx.fillStyle = '#20262b';
@@ -184,7 +219,7 @@ const drawDemons = (
   ctx.imageSmoothingEnabled = false; // crisp pixel art, no blur when up-scaled
   for (const demon of depthOrder(demons)) {
     const radius = depthRadius(demon.z);
-    const sprite = demonSprite(sprites, demon.typeId);
+    const sprite = demonSprite(sprites, demon);
     if (!sprite) {
       drawDemonPlaceholder(view, demon, radius);
       continue;
@@ -193,6 +228,127 @@ const drawDemons = (
     const size = radius * 2;
     ctx.drawImage(sprite, sx - size / 2, sy - size / 2, size, size);
   }
+};
+
+/**
+ * Death pass (T-08, AC-T08-2 / PRD AC-04): plays each dying visual from the effects store,
+ * slicing `deathProgress` over the type's per-frame files. Frames "collapse" toward the
+ * ground in the Doom-sourced art, so they anchor **bottom-centre** at where the live
+ * sprite's feet were — not centre. A missing frame falls back to the nearest earlier one;
+ * with no death art at all, a fading placeholder circle plays instead (AC-06).
+ */
+const drawDeathVisuals = (
+  view: Viewport,
+  effects: EffectsStore,
+  sprites?: SpriteAtlas | null,
+): void => {
+  const { ctx } = view;
+  for (const death of effects.deathVisuals()) {
+    const type = DEMON_TYPES_BY_ID[death.typeId];
+    const radius = depthRadius(death.z);
+    const { sx, sy } = worldToScreen(death, view);
+    const bottomY = sy + radius;
+    const progress = deathProgress(death.ageMs);
+
+    let sprite: SpriteImage | null = null;
+    if (type && sprites) {
+      const frameCount = DEATH_FRAME_COUNTS[type.name];
+      const frame = Math.min(frameCount, Math.floor(progress * frameCount) + 1);
+      for (let candidate = frame; candidate >= 1 && !sprite; candidate--) {
+        sprite = sprites.get(deathFrameKey({ name: type.name, frame: candidate }));
+      }
+    }
+
+    if (sprite) {
+      const size = radius * 2;
+      const natural = imageSize(sprite);
+      const drawHeight = natural ? size * (natural.h / natural.w) : size;
+      ctx.drawImage(sprite, sx - size / 2, bottomY - drawHeight, size, drawHeight);
+      continue;
+    }
+
+    ctx.globalAlpha = 1 - progress;
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius * (1 - progress * 0.5), 0, Math.PI * 2);
+    ctx.fillStyle = type ? DEMON_COLORS[type.name] : UNKNOWN_DEMON_COLOR;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+};
+
+/**
+ * Splat pass (T-08, PRD AC-01): procedural blood burst at each impact point from the
+ * effects store — grows and fades over SHOT_SPLAT_MS (no fx-hit-splat asset supplied;
+ * the procedural burst is the manifest §5 fallback).
+ */
+const drawSplats = (view: Viewport, effects: EffectsStore): void => {
+  const { ctx } = view;
+  for (const splat of effects.splats()) {
+    const progress = Math.min(1, splat.ageMs / SHOT_SPLAT_MS);
+    const { sx, sy } = worldToScreen(splat, view);
+    const radius = 8 + 14 * progress;
+
+    ctx.globalAlpha = 1 - progress;
+    ctx.fillStyle = '#b3232a';
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx - radius * 0.8, sy - radius * 0.5, radius * 0.4, 0, Math.PI * 2);
+    ctx.arc(sx + radius * 0.7, sy + radius * 0.6, radius * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+};
+
+/** Viewmodel box height as a share of the screen; width follows the sprite's aspect. */
+const VIEWMODEL_HEIGHT_RATIO = 0.32;
+
+/**
+ * Viewmodel pass (T-08, AC-T08-3): reads the weapon status + effects clock, never drives
+ * them. Ready → idle; while `'pumping'` the clock yields idle + flash-1/2 overlaid
+ * additively at the muzzle, then pump-1/2/3 (no `fire` frame, no reload — manifest §7).
+ * A missing sprite draws no gun; firing still resolves (AC-06). Returns whether a gun was
+ * drawn so the HUD can keep its text pump cue as the fallback.
+ */
+const drawViewmodel = (
+  view: Viewport,
+  weapon: Weapon,
+  effects: EffectsStore,
+  sprites?: SpriteAtlas | null,
+): boolean => {
+  if (!sprites) {
+    return false;
+  }
+  const frame: ViewmodelFrame =
+    weapon.status === 'pumping' ? effects.viewmodelFrame() : { base: 'idle', flash: null };
+
+  const base = sprites.get(`weapon-shotgun-${frame.base}`);
+  if (!base) {
+    return false;
+  }
+
+  const { ctx, cssWidth, cssHeight } = view;
+  ctx.imageSmoothingEnabled = false;
+  const height = cssHeight * VIEWMODEL_HEIGHT_RATIO;
+  const natural = imageSize(base);
+  const width = natural ? height * (natural.w / natural.h) : height;
+  const gunLeft = (cssWidth - width) / 2;
+  const gunTop = cssHeight - height;
+  ctx.drawImage(base, gunLeft, gunTop, width, height);
+
+  if (frame.flash) {
+    const flash = sprites.get(`weapon-shotgun-${frame.flash}`);
+    if (flash) {
+      const flashHeight = height * 0.45;
+      const flashNatural = imageSize(flash);
+      const flashWidth = flashNatural ? flashHeight * (flashNatural.w / flashNatural.h) : flashHeight;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(flash, gunLeft + (width - flashWidth) / 2, gunTop - flashHeight * 0.55, flashWidth, flashHeight);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+  return true;
 };
 
 const drawShots = (view: Viewport, shots: readonly Shot[]): void => {
@@ -243,7 +399,7 @@ const formatTime = (ms: number): string => {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
 
-const drawHud = (view: Viewport, state: GameState): void => {
+const drawHud = (view: Viewport, state: GameState, viewmodelVisible: boolean): void => {
   const { ctx, cssWidth, cssHeight } = view;
   const { round, weapon } = state;
 
@@ -256,8 +412,9 @@ const drawHud = (view: Viewport, state: GameState): void => {
   ctx.textAlign = 'right';
   ctx.fillText(formatTime(round.timeLeftMs), cssWidth - 16, 16);
 
-  // Interim not-ready cue until the T-08 viewmodel sprite carries the pump visual.
-  if (weapon.status === 'pumping') {
+  // The pump-1/2/3 viewmodel sequence carries the not-ready cue (T-08); the text stays as
+  // the fail-soft fallback when no viewmodel sprite loaded (AC-06).
+  if (weapon.status === 'pumping' && !viewmodelVisible) {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#f2d024';
     ctx.fillText('PUMPING', cssWidth / 2, cssHeight - 60);
@@ -296,21 +453,33 @@ export interface RenderParams {
   fps?: FrameStats | null;
   /** Loaded sprite atlas; omitted or not-yet-ready draws placeholder shapes (T-10). */
   sprites?: SpriteAtlas | null;
+  /** Effects store (T-06); omitted skips the death/splat/viewmodel passes (pre-T-09 boot). */
+  effects?: EffectsStore | null;
+  /** This round's picked backdrop (T-07); omitted or null draws the dark fallback scene. */
+  backdrop?: SpriteImage | null;
 }
 
 /**
- * Draw one frame from the current state. Read-only over `GameState` — the renderer never
- * mutates it (data-model access pattern). Draw order: background → demons (back→front) →
- * shot cues → crosshair → HUD → round-result overlay (when ended) → FPS overlay.
+ * Draw one frame from the current state. Read-only over `GameState` + the effects store —
+ * the renderer never mutates either (data-model access pattern, ADR-0004). Draw order:
+ * backdrop → death visuals → demons (back→front) → shot cues → splats → viewmodel →
+ * crosshair → HUD → round-result overlay (when ended) → FPS overlay.
  */
-export const render = ({ state, view, crosshair, fps, sprites }: RenderParams): void => {
-  drawBackground(view);
+export const render = ({ state, view, crosshair, fps, sprites, effects, backdrop }: RenderParams): void => {
+  drawBackground(view, backdrop);
+  if (effects) {
+    drawDeathVisuals(view, effects, sprites);
+  }
   drawDemons(view, state.demons, sprites);
   drawShots(view, state.shots);
+  if (effects) {
+    drawSplats(view, effects);
+  }
+  const viewmodelVisible = effects ? drawViewmodel(view, state.weapon, effects, sprites) : false;
   if (crosshair) {
     drawCrosshair(view, crosshair);
   }
-  drawHud(view, state);
+  drawHud(view, state, viewmodelVisible);
   if (state.round.status === 'ended') {
     drawRoundResult(view, state);
   }

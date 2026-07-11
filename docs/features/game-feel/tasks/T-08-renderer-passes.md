@@ -7,7 +7,7 @@ priority: P1
 estimate: M
 blocks: [T-09]
 blocked_by: [T-01, T-03, T-06, T-07]
-status: todo
+status: done
 context_budget: 5000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -47,11 +47,11 @@ Then it draws behind all demons/effects; existing z-order (front-most nearest) i
 
 ## Atomic checklist
 
-- [ ] Step 1: backdrop pass — draw the T-07 picked backdrop (or black) first each frame.
-- [ ] Step 2: demon frame selection — full vs hurt@step by `hp/maxHp`; death frame from effects store; fail-soft to placeholder.
-- [ ] Step 3: splat pass — draw active splats from the effects store at their impact points.
-- [ ] Step 4: viewmodel pass — draw the shotgun frame from weapon `status` + effects clock: idle+flash-1/2 overlay at the shot → pump-1/2/3 → idle (no fire frame, no reload). Flash drawn additively over idle at the muzzle.
-- [ ] Step 5: tests — z-order unchanged; hurt-frame-by-hp selection; aim-mapping ≤ 2 px with all passes on; renderer writes nothing to `GameState` (review + snapshot arg is readonly).
+- [x] Step 1: backdrop pass — draw the T-07 picked backdrop (or black) first each frame.
+- [x] Step 2: demon frame selection — full vs hurt@step by `hp/maxHp`; death frame from effects store; fail-soft to placeholder. *(death frames anchor bottom-centre — Doom art collapses toward the ground)*
+- [x] Step 3: splat pass — draw active splats from the effects store at their impact points. *(procedural burst — no fx-hit-splat asset, manifest §5 fallback)*
+- [x] Step 4: viewmodel pass — draw the shotgun frame from weapon `status` + effects clock: idle+flash-1/2 overlay at the shot → pump-1/2/3 → idle (no fire frame, no reload). Flash drawn additively over idle at the muzzle. *(HUD "PUMPING" text kept only as fail-soft fallback when no viewmodel sprite loaded)*
+- [x] Step 5: tests — z-order unchanged; hurt-frame-by-hp selection; aim-mapping ≤ 2 px with all passes on; renderer writes nothing to `GameState` (review + snapshot arg is readonly).
 
 ## Edge cases
 
