@@ -30,7 +30,11 @@ Per-demon remap (`old file → new key`):
 |---|---|---|---|
 | `fast` (**hp 3**) | hurt-2 ← death-1, hurt-1 ← death-2 | 3 ← death-3/4/5 | 5 renames |
 | `brute` (hp 2) | hurt-1 ← death-2 (old hurt-1 **deleted**) | 3 ← death-3/4/5 | 2 deletes + 4 renames |
-| `baron` (hp 4) | hurt-2 ← death-1 (hurt-1 stays) | 3 ← death-2/3/4 | 4 renames |
+| `baron` (hp 4) | hurt-3 ← original hurt (light), hurt-1 ← death-1 (heavy) | 3 ← death-2/3/4 | 5 renames |
+
+> **Post-merge fix (same day):** the first cut put the heavy ex-death-1 frame at `hurt-2`,
+> so hp 3 fell back to it and the light frame showed *last* — wounds read heavy → light.
+> Reslotted to `hurt-3` (light) + `hurt-1` (heavy, hp 2 via nearest-frame): light → heavy.
 
 ## Linked artifacts
 
@@ -75,7 +79,7 @@ guard already drops the unauthored `demon-fast-hurt` key).
 | Case | Expected |
 |---|---|
 | fast at hp 3 (unhurt) | full frame, not a hurt frame (`isDemonHurt` gate unchanged) |
-| baron at hp 3 | nearest-step fallback now resolves to **hurt-2** (was hurt-1) |
+| baron at hp 2 | nearest-step fallback resolves to the heavy **hurt-1** (no hurt-2 authored) |
 | Mid-death visual from a pre-remap round | impossible — assets swap at rest, not live |
 
 ## DoD

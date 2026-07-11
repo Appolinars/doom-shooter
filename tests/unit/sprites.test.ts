@@ -144,7 +144,8 @@ describe('T-07 — external sprite files through the same atlas (AC-T07-1)', () 
     expect(keys).toContain('demon-brute-hurt-1');
     expect(keys).not.toContain('demon-brute-hurt-2');
     expect(keys).toContain('demon-baron-hurt-1');
-    expect(keys).toContain('demon-baron-hurt-2');
+    expect(keys).toContain('demon-baron-hurt-3');
+    expect(keys).not.toContain('demon-baron-hurt-2'); // hp 2 → heavy hurt-1 via fallback
   });
 });
 
@@ -169,6 +170,17 @@ describe('T-07 — resolveHurtSprite nearest-step fallback (AC-T07-2)', () => {
       [hurtFrameKey({ name: 'baron', hpRemaining: 1 })]: fakeImage('hurt-1'),
     });
     expect(resolveHurtSprite({ atlas, type: baron, hp: 3 })).toEqual(fakeImage('hurt-1'));
+  });
+
+  it('baron wound reads light → heavy over the shipped hurt-3/hurt-1 slots (T-13 fix)', () => {
+    const atlas = atlasWith({
+      [hurtFrameKey({ name: 'baron', hpRemaining: 3 })]: fakeImage('light'),
+      [hurtFrameKey({ name: 'baron', hpRemaining: 1 })]: fakeImage('heavy'),
+    });
+
+    expect(resolveHurtSprite({ atlas, type: baron, hp: 3 })).toEqual(fakeImage('light'));
+    expect(resolveHurtSprite({ atlas, type: baron, hp: 2 })).toEqual(fakeImage('heavy'));
+    expect(resolveHurtSprite({ atlas, type: baron, hp: 1 })).toEqual(fakeImage('heavy'));
   });
 
   it('falls back to the full frame when no hurt step exists, and null when nothing does', () => {

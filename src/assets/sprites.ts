@@ -85,14 +85,15 @@ export const DEATH_FRAME_COUNTS: Readonly<Record<DemonName, number>> = {
 };
 
 /**
- * Hurt steps actually authored per demon (§3.2, remapped in T-13): `fast` (3 HP) and
- * `baron` (4 HP) ship hurt-2 + hurt-1; baron's hp 3 resolves to hurt-2 via the
- * nearest-step fallback.
+ * Hurt steps actually authored per demon (§3.2, remapped in T-13): `fast` (3 HP) ships
+ * hurt-2 + hurt-1; `baron` (4 HP) ships hurt-3 (light wound) + hurt-1 (heavy) so the
+ * wound reads light → heavy — hp 2 resolves to the heavy hurt-1 via the nearest-step
+ * fallback (no hurt-2 on purpose).
  */
 const AUTHORED_HURT_STEPS: Readonly<Record<DemonName, readonly number[]>> = {
   fast: [1, 2],
   brute: [1],
-  baron: [1, 2],
+  baron: [1, 3],
 };
 
 export const hurtFrameKey = ({ name, hpRemaining }: { name: DemonName; hpRemaining: number }): string =>
