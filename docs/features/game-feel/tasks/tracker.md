@@ -19,7 +19,7 @@ Statuses: `todo` → `in_progress` → `in_review` → `done` (or `blocked`).
 | [T-05](./T-05-sfx-load-play.md) | SFX load/decode + play, fail-soft | 2 | S | T-04 | done | local merge |
 | [T-06](./T-06-effects-store.md) | Render-side effects store | 3 | M | — | done | local merge |
 | [T-07](./T-07-sprite-backdrop-assets.md) | Sprite / backdrop / demon-art assets | 3 | S | — | done | local merge |
-| [T-08](./T-08-renderer-passes.md) | Renderer passes | 3 | M | T-01, T-03, T-06, T-07 | todo | — |
+| [T-08](./T-08-renderer-passes.md) | Renderer passes | 3 | M | T-01, T-03, T-06, T-07 | done | local merge |
 | [T-09](./T-09-wiring-and-retry.md) | Wiring in main.ts + retry | 4 | M | T-02, T-05, T-08 | todo | — |
 | [T-10](./T-10-nfr-ac-e2e.md) | NFR + AC walkthrough / E2E | 4 | M | T-09 | todo | — |
 

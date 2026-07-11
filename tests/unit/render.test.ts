@@ -6,7 +6,10 @@ import {
   render,
   type Viewport,
 } from '../../src/render/canvas2d.ts';
-import { makeGameState, makeDemon, makeRound, makeShot } from '../factories.ts';
+import { makeGameState, makeDemon, makeRound, makeShot, makeWeapon } from '../factories.ts';
+import { createEffectsStore } from '../../src/render/effects.ts';
+import type { SpriteAtlas } from '../../src/assets/sprites.ts';
+import { DEATH_ANIM_MS, PUMP_DURATION_MS } from '../../src/core/config.ts';
 
 /**
  * Minimal recording stub of the 2D context — the renderer only issues draw calls and sets
@@ -186,5 +189,197 @@ describe('render — read-only over GameState (AC-T09-2)', () => {
     const state = makeGameState({ demons });
 
     expect(() => render({ state, view: makeStubViewport() })).not.toThrow();
+  });
+});
+
+// --- T-08 juice passes (ADR-0004) ---
+
+const fakeSprite = (key: string): CanvasImageSource => ({ key }) as unknown as CanvasImageSource;
+
+/** Records which atlas keys the renderer asked for — frame-selection assertions read this. */
+const atlasWith = (keys: readonly string[]): SpriteAtlas & { requested: string[] } => {
+  const requested: string[] = [];
+  return {
+    requested,
+    ready: true,
+    get: (spriteKey: string) => {
+      requested.push(spriteKey);
+      return keys.includes(spriteKey) ? fakeSprite(spriteKey) : null;
+    },
+  };
+};
+
+describe('T-08 — backdrop pass (AC-T08-4)', () => {
+  it('draws the picked backdrop full-screen before everything else', () => {
+    const view = makeStubViewport();
+    const drawImage = vi.fn();
+    const fillRect = vi.fn();
+    Object.assign(view.ctx, { drawImage, fillRect });
+    const backdrop = fakeSprite('backdrop-1');
+
+    render({ state: makeGameState(), view, backdrop });
+
+    expect(drawImage).toHaveBeenCalledWith(backdrop, 0, 0, 1600, 900);
+    expect(fillRect).not.toHaveBeenCalled(); // backdrop replaces the placeholder scene fills
+  });
+
+  it('falls back to the dark placeholder scene when no backdrop loaded (black fail-soft)', () => {
+    const view = makeStubViewport();
+    const fillRect = vi.fn();
+    Object.assign(view.ctx, { fillRect });
+
+    render({ state: makeGameState(), view, backdrop: null });
+
+    expect(fillRect).toHaveBeenCalled();
+  });
+});
+
+describe('T-08 — hurt frame selection by hp (AC-T08-2)', () => {
+  it('an unhurt demon draws its full frame', () => {
+    const view = makeStubViewport();
+    const sprites = atlasWith(['demon-brute']);
+    const state = makeGameState({ demons: [makeDemon({ id: 1, typeId: 2, hp: 2 })] });
+
+    render({ state, view, sprites });
+
+    expect(sprites.requested).toContain('demon-brute');
+    expect(sprites.requested).not.toContain('demon-brute-hurt-1');
+  });
+
+  it('a hurt demon draws its per-HP-step frame (brute hp 1 → hurt-1)', () => {
+    const view = makeStubViewport();
+    const drawImage = vi.fn();
+    const sprites = atlasWith(['demon-brute', 'demon-brute-hurt-1']);
+    Object.assign(view.ctx, { drawImage });
+    const state = makeGameState({ demons: [makeDemon({ id: 1, typeId: 2, hp: 1 })] });
+
+    render({ state, view, sprites });
+
+    expect(sprites.requested).toContain('demon-brute-hurt-1');
+    expect(drawImage).toHaveBeenCalledWith(fakeSprite('demon-brute-hurt-1'), expect.any(Number), expect.any(Number), expect.any(Number), expect.any(Number));
+  });
+});
+
+describe('T-08 — death + splat passes from the effects store (AC-T08-2, PRD AC-01/AC-04)', () => {
+  it('slices the death animation frame from deathProgress (mid-anim → middle frame)', () => {
+    const view = makeStubViewport();
+    const sprites = atlasWith(['demon-brute-death-1', 'demon-brute-death-3']);
+    const effects = createEffectsStore();
+    effects.spawnDeath({ typeId: 2, x: 500, y: 500, z: 0.5 });
+    effects.advance(DEATH_ANIM_MS / 2); // progress 0.5 of 5 frames → frame 3
+
+    render({ state: makeGameState(), view, sprites, effects });
+
+    expect(sprites.requested).toContain('demon-brute-death-3');
+  });
+
+  it('falls back to the nearest earlier death frame, then a placeholder circle', () => {
+    const view = makeStubViewport();
+    const arc = vi.fn();
+    Object.assign(view.ctx, { arc });
+    const sprites = atlasWith(['demon-brute-death-1']);
+    const effects = createEffectsStore();
+    effects.spawnDeath({ typeId: 2, x: 500, y: 500, z: 0.5 });
+    effects.advance(DEATH_ANIM_MS / 2);
+
+    render({ state: makeGameState(), view, sprites, effects });
+    expect(sprites.requested).toContain('demon-brute-death-2');
+    expect(sprites.requested).toContain('demon-brute-death-1'); // nearest available wins
+
+    const bare = createEffectsStore();
+    bare.spawnDeath({ typeId: 2, x: 500, y: 500, z: 0.5 });
+    expect(() =>
+      render({ state: makeGameState(), view, sprites: atlasWith([]), effects: bare }),
+    ).not.toThrow();
+    expect(arc).toHaveBeenCalled(); // placeholder fading circle
+  });
+
+  it('draws active splats at their impact points', () => {
+    const view = makeStubViewport();
+    const arc = vi.fn();
+    Object.assign(view.ctx, { arc });
+    const effects = createEffectsStore();
+    effects.spawnSplat({ x: 500, y: 250, z: 0 });
+
+    render({ state: makeGameState(), view, effects });
+
+    // splat center: (500/1000)*1600 = 800, (250/1000)*900 = 225
+    expect(arc.mock.calls.some(([sx, sy]) => sx === 800 && sy === 225)).toBe(true);
+  });
+});
+
+describe('T-08 — viewmodel pass reads weapon status + effects clock (AC-T08-3)', () => {
+  it('draws idle when the weapon is ready', () => {
+    const view = makeStubViewport();
+    const sprites = atlasWith(['weapon-shotgun-idle']);
+    const effects = createEffectsStore();
+    const state = makeGameState({ weapon: makeWeapon({ status: 'ready' }) });
+
+    render({ state, view, sprites, effects });
+
+    expect(sprites.requested).toContain('weapon-shotgun-idle');
+  });
+
+  it('draws idle + flash overlay right after the shot, then the pump frames', () => {
+    const view = makeStubViewport();
+    const sprites = atlasWith([
+      'weapon-shotgun-idle',
+      'weapon-shotgun-flash-1',
+      'weapon-shotgun-pump-1',
+      'weapon-shotgun-pump-2',
+      'weapon-shotgun-pump-3',
+    ]);
+    const effects = createEffectsStore();
+    effects.onFire();
+    const state = makeGameState({
+      weapon: makeWeapon({ status: 'pumping', pumpRemainingMs: PUMP_DURATION_MS }),
+    });
+
+    render({ state, view, sprites, effects });
+    expect(sprites.requested).toContain('weapon-shotgun-idle');
+    expect(sprites.requested).toContain('weapon-shotgun-flash-1');
+
+    effects.advance(120); // past the flash window, into pump-1
+    sprites.requested.length = 0;
+    render({ state, view, sprites, effects });
+    expect(sprites.requested).toContain('weapon-shotgun-pump-1');
+    expect(sprites.requested).not.toContain('weapon-shotgun-flash-1');
+  });
+
+  it('a missing viewmodel sprite draws no gun and never throws (AC-06)', () => {
+    const view = makeStubViewport();
+    const effects = createEffectsStore();
+    const state = makeGameState({ weapon: makeWeapon({ status: 'pumping', pumpRemainingMs: 100 }) });
+
+    expect(() => render({ state, view, sprites: atlasWith([]), effects })).not.toThrow();
+  });
+});
+
+describe('T-08 — all passes stay read-only (AC-T08-1)', () => {
+  it('never mutates GameState with every pass active', () => {
+    const state = makeGameState({
+      round: makeRound({ score: 30, status: 'running' }),
+      demons: [makeDemon({ id: 1, typeId: 2, hp: 1, z: 0.2 })],
+      shots: [makeShot({ outcome: 'kill' })],
+      weapon: makeWeapon({ status: 'pumping', pumpRemainingMs: 200 }),
+    });
+    const effects = createEffectsStore();
+    effects.onFire();
+    effects.spawnSplat({ x: 100, y: 100, z: 0 });
+    effects.spawnDeath({ typeId: 1, x: 200, y: 200, z: 0.5 });
+    const snapshot = structuredClone(state);
+
+    render({
+      state,
+      view: makeStubViewport(),
+      sprites: atlasWith(['demon-brute', 'weapon-shotgun-idle']),
+      effects,
+      backdrop: fakeSprite('backdrop-1'),
+      crosshair: { x: 500, y: 500 },
+    });
+
+    expect(state).toEqual(snapshot);
+    expect(effects.splats()).toHaveLength(1); // render never prunes or spawns effects either
+    expect(effects.deathVisuals()).toHaveLength(1);
   });
 });
