@@ -17,7 +17,7 @@ owner: Maksym Vakulenko
 
 ## Goal
 
-Add `src/audio/sfx.ts` on top of the T-04 graph: fetch + `decodeAudioData` one buffer per action key (`shoot`, `pump`, `reload`, `spawn`, `death`; hurt reuses a cue or its own key per the asset list), and expose `play(key)` that fires a capped voice through `sfxGain`. A missing or un-decodable file resolves to a **silent no-op** and logs once — never blocks the round (AC-06), reusing the base fail-soft loader convention (`assets.sprite_unavailable` style, logged once, not per frame).
+Add `src/audio/sfx.ts` on top of the T-04 graph: fetch + `decodeAudioData` one **WAV** buffer per key — the 9 keys in [[../assets-manifest.md]] §3.1 (`shoot` incl. pump/cock; per-demon `demon-<type>-spawn/hurt/death`; **no `pump`**, **no `reload`**) — and expose `play(key)` that fires a capped voice through `sfxGain`. A missing or un-decodable file resolves to a **silent no-op** and logs once — never blocks the round (AC-06), reusing the base fail-soft loader convention (`assets.sprite_unavailable` style, logged once, not per frame).
 
 ## Linked artifacts
 
@@ -39,14 +39,14 @@ When `play(key)` is called
 Then it is a silent no-op, logs once, and never throws.
 
 **AC-T05-3 (per-action keys present)**
-Given the action set (shoot/pump/reload/spawn/death, + hurt cue)
+Given the 9-key set (`shoot` + per-demon spawn/hurt/death, §3.1)
 Then each maps to a load slot; unresolved slots are treated as missing (AC-T05-2), not errors.
 
 ## Atomic checklist
 
 - [ ] Step 1: `sfx.ts` — `loadSfx(manifest)`: fetch + `decodeAudioData` each key; store decoded buffers; log-once on failure, keep going.
 - [ ] Step 2: `play(key)` — look up buffer; if absent, silent no-op; else create a bufferSource → `sfxGain`, register with the voice pool (T-04 cap).
-- [ ] Step 3: define the SFX key manifest (`shoot`/`pump`/`reload`/`spawn`/`death`/`hurt`); paths are placeholders pending the T-07/PRD §8 asset list.
+- [ ] Step 3: define the SFX key manifest (the 9 keys, §3.1); paths per [[../assets-manifest.md]] §3.1 (`audio/<key>.wav`).
 - [ ] Step 4: unit tests — loaded key plays one capped voice; missing key = no-op/no-throw + single log; decode-failure path.
 
 ## Edge cases

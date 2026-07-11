@@ -14,6 +14,8 @@ ticket: "N/A (personal pet-project)"
 - **Date:** 2026-07-05
 - **Deciders:** Maksym Vakulenko (author), during the architecture-design Socratic walk
 
+> **Amendment 2026-07-11:** the magazine-**reload** mechanic was removed from the game (unlimited ammo — PRD §1 amendment). The core decision here (pump timer on the fixed step, blocks fire, sprite render-side) is **unchanged and still Accepted**; it is now the weapon's *only* gate. The "mirrors the reload gate" framing and the `'reloading'`/shell/empty-magazine references below are **historical** — read `'ready' ↔ 'pumping'` as the shipped two-state machine.
+
 ## Context
 
 PRD US-02/AC-02 makes the between-shots pump (передергивание затвора) briefly gate the next shot. Unlike every other effect in this feature, the pump is **not** presentation-only — a fire attempt during the pump must be blocked and consume no shell, mirroring the existing reload gate (base AC-02). A gameplay gate must be deterministic, so its timer cannot live on the render layer or on a wall-clock timestamp (base ADR-0002: fixed step, never wall-clock).

@@ -27,10 +27,10 @@ Integrate the layers in `src/main.ts` (SAD §5 `main.ts ◐`): arm audio on the 
 
 ## Acceptance criteria
 
-**AC-T09-1 (6/6 action feedback, PRD KPI/AC-01/04/05)**
+**AC-T09-1 (action feedback, PRD KPI/AC-01/04/05)**
 Given the wired loop
-When each of shoot / pump / reload / spawn / hurt / death occurs
-Then the matching `play(key)` fires **and** the matching effect is spawned — 6 of 6 actions paired.
+When shoot / pump / spawn / hurt / death occurs
+Then each has visible + audible feedback: `shoot` → `play('shoot')` (the sound covers the pump too — pump itself is visual-only); spawn/hurt/death → `play('demon-<type>-spawn|hurt|death')` for the demon's type + the matching effect. Reload dropped 2026-07-11.
 
 **AC-T09-2 (arm on first gesture, PRD AC-07)**
 Given the page just loaded
@@ -50,7 +50,7 @@ Then the effects store is cleared and the new round starts clean — no finalize
 ## Atomic checklist
 
 - [ ] Step 1: register the first-gesture listener → `armOnFirstGesture()` (T-04); ensure it only arms once.
-- [ ] Step 2: event → SFX map — call `play(key)` for shoot/pump/reload/spawn/hurt/death at the right emit points (fire path, spawn path, hit/kill path from T-02).
+- [ ] Step 2: event → SFX map — `play('shoot')` on fire (no separate pump sound); `play('demon-<type>-spawn')` on spawn; `play('demon-<type>-hurt')` on non-lethal hit; `play('demon-<type>-death')` on kill — type resolved from the demon (fire/spawn/hit/kill paths, T-02).
 - [ ] Step 3: event → effects — `spawnSplat` on hit, `spawnDeath` on kill, `onFire` for the viewmodel; `advance(dt)` + `pruneExpired()` each frame.
 - [ ] Step 4: "try again" button on round-end → `createInitialGameState()` + `backdrops.pickRandom()` + `effects.clear()`.
 - [ ] Step 5: integration test/harness — 6/6 event→(SFX+FX) fire; retry leaves zero leaked state (score 0, no demons, fresh backdrop, empty effects store).

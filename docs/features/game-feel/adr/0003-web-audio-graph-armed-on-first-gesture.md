@@ -16,7 +16,7 @@ ticket: "N/A (personal pet-project)"
 
 ## Context
 
-PRD US-01/US-05/AC-07 require audible feedback for five actions (shoot / pump / reload / spawn / death) within ≤ 100 ms, with a concurrent-voice cap so overlapping deaths + rapid fire never distort (PRD §6), all fail-soft. Browsers block audio until a user gesture (AC-07). The author also intends to add **background music (an mp3)** later — so the audio foundation must extend to a streamed track without rework. This is a new platform subsystem for the project (no audio today).
+PRD US-01/US-05/AC-07 require audible feedback for the action set (shoot / pump / spawn / death / hurt — reload dropped 2026-07-11) within ≤ 100 ms, with a concurrent-voice cap so overlapping deaths + rapid fire never distort (PRD §6), all fail-soft. Browsers block audio until a user gesture (AC-07). The author also intends to add **background music (an mp3)** later — so the audio foundation must extend to a streamed track without rework. This is a new platform subsystem for the project (no audio today).
 
 ## Decision drivers
 

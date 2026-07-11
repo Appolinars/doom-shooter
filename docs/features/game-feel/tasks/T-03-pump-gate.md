@@ -15,48 +15,51 @@ owner: Maksym Vakulenko
 
 # T-03 — Pump gate as a fixed-step weapon state
 
+> **Amended 2026-07-11:** the magazine-reload mechanic is removed (PRD §1 amendment) — **unlimited ammo, no shells, no `'reloading'` status**. This task now also strips reload/shells from the base-game weapon (same files it touches), leaving the pump as the *only* weapon gate.
+
 ## Goal
 
-The pump is the **only** juice element that changes gameplay (ADR-0002), so its timer lives on the fixed step exactly like reload — not on the render layer. In `src/core/state.ts` add `'pumping'` to `Weapon.status` plus `pumpRemainingMs`; in `src/core/config.ts` add `PUMP_DURATION_MS = 350` (PRD-resolved); in `src/systems/weapon.ts`, a successful fire sets `status = 'pumping'`, `pumpRemainingMs = PUMP_DURATION_MS`, the timer counts down on the fixed step (like reload, never wall-clock), and while `'pumping'` a fire attempt is **blocked and consumes no shell**. Only the pump **sprite** is render-side (that is T-08).
+The pump is the **only** juice element that changes gameplay (ADR-0002), so its timer lives on the fixed step — not on the render layer. In `src/core/state.ts` add `'pumping'` to `Weapon.status` plus `pumpRemainingMs`; in `src/core/config.ts` add `PUMP_DURATION_MS = 350` (PRD-resolved); in `src/systems/weapon.ts`, a ready fire always succeeds (no ammo check), sets `status = 'pumping'`, `pumpRemainingMs = PUMP_DURATION_MS`, the timer counts down on the fixed step (never wall-clock), and while `'pumping'` a fire attempt is **blocked and dropped** (no state change). Only the pump **sprite** is render-side (that is T-08).
+
+**Reload removal (same files):** delete `SHELL_CAPACITY` + `RELOAD_DURATION_MS` from `config.ts`, the `'reloading'` status + `shells`/`reloadRemainingMs` from `state.ts`, and all shell-spend / reload-transition logic from `weapon.ts`. Remove or rewrite the base game's reload unit tests. The weapon becomes a two-state machine: `'ready'` ↔ `'pumping'`.
 
 ## Linked artifacts
 
-- [[../adr/0002-pump-as-fixed-step-weapon-gate.md]] — pump timer on the fixed step, mirrors the reload gate; sprite alone is render-side.
-- [[../PRD.md]] AC-02 (mid-pump/mid-reload fire is blocked, consumes no shell), §8 OQ resolved: `PUMP_DURATION_MS ≈ 350`.
-- [[../sad.md]] §6 Critical flow 1 (fire → `status → 'pumping'` → gate), §5 (`weapon.ts ◐ pump gate`, `state.ts ◐ status gains 'pumping' + pumpRemainingMs`), §10 QG-2 (drift ≤ 1% must stay green — pump uses the fixed-step clock, not wall-clock).
-- Base gate this mirrors: [[../../basic-shooting-range/PRD.md]] AC-02 (reload gate).
+- [[../adr/0002-pump-as-fixed-step-weapon-gate.md]] — pump timer on the fixed step; sprite alone is render-side. *(ADR's "mirrors the reload gate" rationale is now historical — reload is gone; pump is the sole gate.)*
+- [[../PRD.md]] §1 amendment (reload removed, unlimited ammo), AC-02 (mid-pump fire is blocked/dropped), §8 OQ resolved: `PUMP_DURATION_MS ≈ 350`.
+- [[../sad.md]] §6 Critical flow 1 (fire → `status → 'pumping'` → gate), §5 (`weapon.ts ◐ pump gate; reload/shells removed`, `state.ts ◐ status gains 'pumping' + pumpRemainingMs`), §10 QG-2 (drift ≤ 1% must stay green — pump uses the fixed-step clock, not wall-clock).
 
 ## Acceptance criteria
 
-**AC-T03-1 (pump blocks fire, no shell, PRD AC-02)**
-Given `status == 'pumping'` (or `'reloading'`)
+**AC-T03-1 (pump blocks fire, PRD AC-02)**
+Given `status == 'pumping'`
 When the player attempts to fire
-Then the shot is blocked, no shell is consumed, and the weapon reports not-ready — identical to the existing reload gate.
+Then the shot is blocked and dropped (no state change), and the weapon reports not-ready.
 
 **AC-T03-2 (pump after a shot)**
-Given a ready weapon with shells
+Given a ready weapon
 When a fire succeeds
-Then a shell is spent, `status` becomes `'pumping'`, `pumpRemainingMs = PUMP_DURATION_MS`, and the shot resolves this step (hit path runs).
+Then `status` becomes `'pumping'`, `pumpRemainingMs = PUMP_DURATION_MS`, and the shot resolves this step (hit path runs). No ammo is consumed (unlimited).
 
 **AC-T03-3 (deterministic timer, PRD/SAD determinism)**
 Given the pump is counting down
 When the fixed step advances
-Then `pumpRemainingMs` decreases by the fixed-step delta only; at ≤ 0 the weapon returns to `'ready'` (or `'reloading'` if the magazine emptied) — the existing drift ≤ 1% test between 60↔144 Hz stays green.
+Then `pumpRemainingMs` decreases by the fixed-step delta only; at ≤ 0 the weapon returns to `'ready'` — the existing drift ≤ 1% test between 60↔144 Hz stays green.
 
 ## Atomic checklist
 
-- [ ] Step 1: `config.ts` — `PUMP_DURATION_MS = 350` (placeholder-tunable, PRD §8).
-- [ ] Step 2: `state.ts` — add `'pumping'` to the `Weapon.status` union + `pumpRemainingMs: number`.
-- [ ] Step 3: `weapon.ts` — successful fire → enter `'pumping'`; tick `pumpRemainingMs` down on the fixed step; exit to `'ready'`/`'reloading'`; fire while `'pumping'`/`'reloading'` → blocked, no shell.
-- [ ] Step 4: unit tests — AC-02 gate (no shell consumed while pumping); pump→ready transition after `PUMP_DURATION_MS`; interaction with the empty-magazine → reload transition; re-run base drift test with pump active.
+- [ ] Step 1: `config.ts` — add `PUMP_DURATION_MS = 350` (placeholder-tunable, PRD §8); **remove** `SHELL_CAPACITY`, `RELOAD_DURATION_MS`.
+- [ ] Step 2: `state.ts` — `Weapon.status` union becomes `'ready' | 'pumping'` (**drop** `'reloading'`); add `pumpRemainingMs: number`; **remove** `shells` / `reloadRemainingMs`.
+- [ ] Step 3: `weapon.ts` — ready fire always succeeds → enter `'pumping'`; tick `pumpRemainingMs` down on the fixed step; exit to `'ready'`; fire while `'pumping'` → blocked/dropped. **Remove** shell-spend + reload logic.
+- [ ] Step 4: unit tests — AC-02 gate (fire dropped while pumping); pump→ready transition after `PUMP_DURATION_MS`; re-run base drift test with pump active. **Delete/rewrite** the base reload/shell tests.
 
 ## Edge cases
 
 | Case | Expected |
 |---|---|
-| Fire empties the magazine on the same shot | after pump completes, transition to `'reloading'`, not `'ready'` (pump and reload compose, both fixed-step) |
+| Rapid fire spam | each ready fire enters pump; shots between pump end and next fire are simply gated — no ammo ever runs out |
 | Fire attempted the exact step pump hits 0 | resolves as ready that step (define ordering in code; keep it deterministic) |
 
 ## DoD
 
-- AC-02 block-no-shell + pump-timer transition tests green; pump uses **only** the fixed-step clock (no `performance.now`/`Date`); base drift test green with pump enabled.
+- AC-02 fire-dropped-while-pumping + pump-timer transition tests green; pump uses **only** the fixed-step clock (no `performance.now`/`Date`); base drift test green with pump enabled; reload/shell code + tests removed, typecheck clean.

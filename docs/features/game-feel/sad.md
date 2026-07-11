@@ -20,7 +20,7 @@ ticket: "N/A (personal pet-project)"
 
 **Top-3 quality goals (1-liners; full scenarios in §10):**
 
-1. **Responsiveness** — every player action (shoot / pump / reload / spawn / hurt / death / retry) yields visible **and** audible feedback within ≤ 100 ms (PRD §6).
+1. **Responsiveness** — every player action (shoot / pump / spawn / hurt / death / retry) yields visible **and** audible feedback within ≤ 100 ms (PRD §6). *(Reload dropped 2026-07-11 — unlimited ammo, pump is the only weapon gate; see PRD §1 amendment.)*
 2. **Determinism preserved under juice** — ≥ 30 FPS with viewmodel + concurrent death animations + backdrop, while the fixed step gains **zero** new mutations (drift ≤ 1%, aim ≤ 2 px unchanged) (PRD §6).
 3. **Fail-soft assets** — any missing/broken author asset degrades to placeholder/silence and never crashes a round (PRD AC-06).
 
@@ -63,7 +63,7 @@ The system stays a single client-side browser game with no backend. `game-feel` 
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| player | Person | Fires, pumps, reloads, clicks "try again"; supplies the first gesture that arms audio |
+| player | Person | Fires, pumps, clicks "try again"; supplies the first gesture that arms audio |
 | author asset files | System (static, external) | Audio/sprite/backdrop files fetched at load; any may be missing → fail-soft |
 | browser audio policy | System (external) | Gates `AudioContext` until the first user gesture (AC-07) |
 
@@ -73,7 +73,7 @@ The system stays a single client-side browser game with no backend. `game-feel` 
 C4Context
     title game-feel — System Context
 
-    Person(player, "Player", "Fires, pumps, reloads, retries; first gesture arms audio")
+    Person(player, "Player", "Fires, pumps, retries; first gesture arms audio")
     System(game, "doom-shooter (browser game)", "Canvas2D shooting range + juice/atmosphere layer")
     System_Ext(assets, "Author asset files", "Audio, sprites, backdrops — fetched at load, may be absent")
     System_Ext(audiopolicy, "Browser audio policy", "Blocks sound until a user gesture")
@@ -88,7 +88,7 @@ C4Context
 **Top-4 strategic choices (the seeds for ADRs):**
 
 1. **HP as a bounded field on the demon, damaged inline in the hit path** — the smallest change that adds durability without a new system or a second source of truth; preserves front-most-by-`z` resolution and the non-decreasing-score invariant. → [[adr/0001-demon-hp-as-bounded-field-damaged-inline]].
-2. **Pump gates fire rate as a fixed-step weapon state** — the pump is the *only* juice element that changes gameplay, so its timer lives on the fixed step exactly like reload; its sprite alone is render-side. → [[adr/0002-pump-as-fixed-step-weapon-gate]].
+2. **Pump gates fire rate as a fixed-step weapon state** — the pump is the *only* juice element that changes gameplay, so its timer lives on the fixed step; its sprite alone is render-side. *(Reload removed 2026-07-11 — pump is now the sole fixed-step weapon gate.)* → [[adr/0002-pump-as-fixed-step-weapon-gate]].
 3. **A Web Audio graph armed once on the first gesture, with an SFX bus now and a music bus reserved** — one `AudioContext`, `masterGain → sfxGain` (decoded buffers, capped voice pool) with a `musicGain` seam for a future streamed track, so adding music later needs no rework. → [[adr/0003-web-audio-graph-armed-on-first-gesture]].
 4. **All juice animation state lives on the render layer, off `GameState`** — death animations, viewmodel frames and hit splats are driven by a render-side rAF clock; the killing shot despawns the demon on the fixed step, render holds the transient dying visual. This is what keeps base ADR-0002 (determinism) and the drift/aim tests intact. → [[adr/0004-juice-animation-state-on-render-layer]].
 
@@ -110,7 +110,7 @@ src/
 ├── entities/
 │   └── demon.ts         ◐ + hp field (maxHp resolved from DemonType)
 ├── systems/
-│   ├── weapon.ts        ◐ pump gate: 'pumping' blocks fire, no shell consumed; timer on fixed step
+│   ├── weapon.ts        ◐ pump gate: 'pumping' blocks fire; timer on fixed step. Reload/shells REMOVED (2026-07-11): drop SHELL_CAPACITY, reload status, unlimited ammo
 │   ├── hit.ts           ◐ hp-- inline; despawn + applyKill only on hp==0
 │   ├── score.ts         ○ applyKill unchanged (still called once, on the killing shot)
 │   ├── spawn.ts         ○ unchanged (HP set at spawn from type)
@@ -170,12 +170,12 @@ sequenceDiagram
     Note over Player,Audio: first-ever gesture also arms AudioContext (AC-07)
     Input->>Weapon: enqueue FireIntent
     alt weapon ready
-        Weapon->>Weapon: spend shell, status → 'pumping', pumpRemainingMs = PUMP_DURATION_MS
+        Weapon->>Weapon: status → 'pumping', pumpRemainingMs = PUMP_DURATION_MS (no ammo/shells)
         Weapon->>Hit: resolveFire (front-most by z)
         Hit-->>FX: hit splat at impact (render-side)
-        Weapon-->>Audio: play('shoot') then play('pump')
-    else pumping or reloading
-        Weapon-->>Player: fire blocked, no shell consumed (AC-02)
+        Weapon-->>Audio: play('shoot')  %% shoot sound includes the pump/cock; no separate pump sound
+    else pumping
+        Weapon-->>Player: fire blocked, dropped (AC-02)
     end
     FX->>FX: run viewmodel firing→pump→idle on rAF clock
 ```
@@ -232,7 +232,7 @@ ADR files live under `docs/features/game-feel/adr/NNNN-<title>.md`.
 ## 10. Quality requirements
 
 **QG-1. Responsiveness (action→feedback ≤ 100 ms)**
-- **When:** the player fires / pumps / reloads, or a demon spawns / is hurt / dies / the player retries.
+- **When:** the player fires / pumps, or a demon spawns / is hurt / dies / the player retries.
 - **Then:** the paired visible frame + audible SFX begin within ≤ 100 ms of the action (in-engine timestamp delta: event → sound trigger + firing frame).
 - **How verify:** in-engine timestamp assertion (fire event → `play()` + viewmodel frame); manual walkthrough of all 6 action→feedback pairs (KPI: 6/6).
 

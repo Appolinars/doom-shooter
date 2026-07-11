@@ -62,7 +62,7 @@ Parallel branches: the three Wave-1 gameplay slices (T-01→T-02, and T-03) run 
 |----|-------|-----|------|------|----------|-------|
 | T-01 | Demon HP model (field + config + spawn init) | SAD + ADR-0001 Accepted | `hp`/`maxHp` types + 4-HP type; spawn sets hp; factory tests green | — | S | Maksym |
 | T-02 | HP damage inline in hit path | T-01 | multi-shot + non-decreasing-score + AC-08 escape tests green | T-01 | S | Maksym |
-| T-03 | Pump gate as fixed-step weapon state | ADR-0002 Accepted | AC-02 block-no-shell + pump-timer tests green | — | S | Maksym |
+| T-03 | Pump gate as fixed-step weapon state (+ remove reload/shells) | ADR-0002 Accepted | AC-02 fire-dropped-while-pumping + pump-timer tests green; reload/shell code removed | — | S | Maksym |
 | T-04 | Web Audio graph, armed on first gesture | ADR-0003 Accepted | arm-on-gesture + voice-cap + pre-arm silent no-op tests | — | M | Maksym |
 | T-05 | SFX load/decode + `play(key)`, fail-soft | T-04 | per-action buffers; missing key → silent; unit tests | T-04 | S | Maksym |
 | T-06 | Render-side effects store (rAF clock) | ADR-0004 Accepted | splats/death/viewmodel-clock advance on rAF delta; prune test | — | M | Maksym |

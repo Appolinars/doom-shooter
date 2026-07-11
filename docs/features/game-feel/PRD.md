@@ -25,12 +25,12 @@ Accepted vector: **Approach C — Structured additive feel-layer** (idea-brief �
 Traceability context from the base game code and its author's decisions during this stage:
 - The demon entity (`src/entities/demon.ts`) has **no HP field today** — a hit removes the demon immediately and scores (`src/systems/hit.ts`). This feature adds a single `hp` field plus a "remove 1, score on 0" damage step; the front-most-by-`z` hit resolution (ADR-0001) is preserved.
 - The engine runs a **deterministic fixed step decoupled from render** (ADR-0002). All *pure* juice (muzzle-in-sprite firing frame, hit splats, death animation, backdrop) is computed on the render layer and never mutates the fixed step or the crosshair→world aim mapping.
-- **Author decision (this stage): the between-shots pump gates fire rate.** Unlike the other effects, the pump is *not* presentation-only — while pumping, a fire attempt is blocked and consumes no shell (mirroring the existing reload gate, `basic-shooting-range` AC-02). Its timer therefore lives on the fixed step (like reload, never wall-clock); only its sprite is render-side. This is a deliberate, author-confirmed gameplay change beyond idea-brief §5's "no new logic beyond HP".
+- **Author decision (this stage): the between-shots pump gates fire rate, and the magazine-reload mechanic is removed.** *(Amended 2026-07-11 during asset collection.)* The shotgun now has **unlimited ammo and no reload**; the pump between shots is the **only** weapon gate. Unlike the other effects, the pump is *not* presentation-only — while pumping, a fire attempt is blocked (input-gate pattern: shot dropped, no state corruption). Its timer lives on the fixed step (never wall-clock); only its sprite is render-side. This supersedes the earlier "pump mirrors the reload gate" framing: with reload gone, pump is the sole fixed-step weapon gate. Deliberate, author-confirmed gameplay change beyond idea-brief §5's "no new logic beyond HP". **Ripple:** the base game's `SHELL_CAPACITY`/`RELOAD_DURATION_MS`/`Weapon.status: 'reloading'` (shipped in `basic-shooting-range`) are to be removed when game-feel is implemented — not yet done in code.
 - The engine already ships a **fail-soft sprite loader** (`src/assets/sprites.ts`): `atlas.get` returns `null` for an unloaded key and the renderer falls back to a placeholder, so a missing asset never crashes a round. Every new asset kind (audio, backdrops, gun + per-HP demon sprites) reuses this pattern.
 
 ## 2. Goals
 
-- Every player action — shoot, pump, reload, spawn, hurt, death, retry — has visible and audible feedback within a sub-100ms window, turning the silent tech demo into something that reads as Doom (idea-brief §13, §7 Approach C).
+- Every player action — shoot, pump, spawn, hurt, death, retry — has visible and audible feedback within a sub-100ms window, turning the silent tech demo into something that reads as Doom (idea-brief §13, §7 Approach C).
 - Kills show consequence: demons carry shot-durability (HP 1/2/4), bleed while damaged, and play a short death animation on the killing shot — while the flat, non-decreasing score invariant stays intact (idea-brief §13 locked-in pointer).
 - A finished round is replayable in one click against a fresh random Doom backdrop, and every author-supplied asset is optional and fail-soft so a missing file degrades to placeholder/silence, never crashes (idea-brief §13).
 
@@ -53,11 +53,13 @@ Traceability context from the base game code and its author's decisions during t
 **I want** the shotgun to visibly fire and sound off when I shoot
 **So that** firing feels physical instead of silent and invisible.
 
-### US-02: Feel the pump and reload
+### US-02: Feel the pump
 
 **As a** player
-**I want** a short pump between shots that briefly gates the next shot, and a full reload when the magazine empties, each with its own animation and sound
+**I want** a short pump between shots that briefly gates the next shot, with its own animation and sound
 **So that** the weapon has rhythm and weight rather than instant infinite spam.
+
+> *Amended 2026-07-11: the magazine reload was dropped — unlimited ammo, the pump is the only weapon gate.*
 
 ### US-03: Wear demons down
 
@@ -99,9 +101,9 @@ Traceability context from the base game code and its author's decisions during t
 
 ### AC-02 (US-02) — domain invariant / input gating
 
-**Given** the shotgun is mid-pump or mid-reload
+**Given** the shotgun is mid-pump
 **When** the player attempts to fire
-**Then** the system blocks the shot, consumes no shell, and the player sees the weapon is not ready.
+**Then** the system blocks the shot (drops the fire attempt with no state change) and the player sees the weapon is not ready.
 
 ### AC-03 (US-03) — domain invariant
 
@@ -178,12 +180,12 @@ Traceability context from the base game code and its author's decisions during t
 ## 7. Metrics / KPIs
 
 - **"Feels like Doom" self-rating** — baseline: 2/5 (silent tech demo, current base game), target: ≥ 4.5/5 after the feel layer (idea-brief §7 Approach C outcome metric).
-- **Action-feedback coverage** — baseline: 0 of 6 actions have paired audio + visual feedback, target: 6/6 actions (shoot, pump, reload, spawn, hurt, death) each with feedback within the sub-100ms window (idea-brief §13).
+- **Action-feedback coverage** — baseline: 0 of 5 actions have paired audio + visual feedback, target: 5/5 actions (shoot, pump, spawn, hurt, death) each with feedback within the sub-100ms window (idea-brief §13).
 - **Sustained FPS with juice** — baseline: ≥ 30 FPS (base game), target: ≥ 30 FPS for ≥ 95% of session time with viewmodel, HP demons, death animations, and a backdrop active.
 
 ## 8. Open questions
 
-- [ ] Exact asset list to supply — which sounds, how many backdrops, weapon + per-HP demon sprite sheets? Default now: one sound per action (shoot/pump/reload/spawn/death), ≥ 2 backdrops, one shotgun sheet, one sprite set per demon type incl. hurt + death frames. — owner: Maksym, due: before implementation
+- [x] **RESOLVED (2026-07-11) → [assets-manifest.md](./assets-manifest.md).** Exact asset list: SFX `shoot/pump/spawn/death/hurt` (5, reload dropped), viewmodel `idle/fire/pump-1/pump-2/flash`, per-type demon full/hurt/death frames (all sourced from Freedoom, BSD-3), ≥ 2 backdrops. — owner: Maksym
 - [ ] HP-tier balance — point values and spawn mix for 1/2/4-HP demons? Default now: extend the two existing types (fast=1 HP, brute=2 HP) and add one 4-HP type; point values tuned in implementation. — owner: Maksym, due: during implementation (tuning debt)
 - [ ] Is the bleeding/hurt sprite one shared frame or per-HP-step frames? Default now: one shared hurt frame per demon type. — owner: Maksym, due: architecture gate
 - [ ] Pump duration (`PUMP_DURATION_MS`) that gates fire rate — how short? Default now: ~350 ms, tuned so rapid fire still feels responsive but the pump reads. — owner: Maksym, due: architecture gate

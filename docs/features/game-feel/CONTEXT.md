@@ -16,8 +16,8 @@ domain words this feature introduces. Domain words + boundaries only, no impleme
 
 <!-- term · 1-sentence canonical definition · 1-sentence boundary (what it is NOT). -->
 - juice / game feel — the audiovisual feedback layer (sound, screen shake, muzzle flash, hit splats) added on top of already-working mechanics. NOT gameplay rules (juice never decides an outcome; it only expresses one).
-- viewmodel — the first-person shotgun sprite shown on screen, with distinct frames per weapon state (idle / firing / pump / full-reload). NOT the weapon system (viewmodel is the visual; the weapon system owns fire/shell/reload logic).
-- pump / rack (передергивание затвора) — the between-shots slide-cocking action and its short animation + sound. NOT reload (a pump cycles one shell within an ongoing round; reload refills spent ammo).
+- viewmodel — the first-person shotgun sprite shown on screen, with distinct frames per weapon state (idle / fire / pump). NOT the weapon system (viewmodel is the visual; the weapon system owns fire + pump-gate logic). *(Reload/ammo removed 2026-07-11 — no reload frame.)*
+- pump / rack (передергивание затвора) — the between-shots slide-cocking action and its short animation + sound; the **only** weapon gate. NOT reload (reload/magazine was dropped 2026-07-11 — ammo is unlimited).
 - hit points / HP — a demon's shot-durability tier (1 / 2 / 4); each landed shot removes exactly 1. NOT health regeneration (HP only ever decreases within a demon's life).
 - hurt state — the transient bleeding sprite shown while a demon has taken damage but still has HP left. NOT death (hurt means alive-and-damaged; a hurt demon can still escape as a miss).
 - death animation — the short (~1s) sprite sequence a demon plays once its last HP is removed, after which it despawns. NOT miss (death is a kill that scores; a miss is an escaped un-killed demon).
