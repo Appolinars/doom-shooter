@@ -7,7 +7,7 @@ priority: P2
 estimate: S
 blocks: []
 blocked_by: [T-09]
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-11
 owner: Maksym Vakulenko
@@ -54,14 +54,14 @@ Then `play()` is a silent no-op (logged once at load time for asset failures) an
 
 ## Atomic checklist
 
-- [ ] Step 1: `music.ts` — `loadMusic({ bus })`: fetch + decode the finale WAV, log-once
+- [x] Step 1: `music.ts` — `loadMusic({ bus })`: fetch + decode the finale WAV, log-once
       fail-soft, `loaded` promise (same shape as `loadSfx`).
-- [ ] Step 2: `play()` — looping bufferSource → `musicGain`; idempotent while already
+- [x] Step 2: `play()` — looping bufferSource → `musicGain`; idempotent while already
       playing; `stop()` stops and forgets the source.
-- [ ] Step 3: wiring — `createFeedbackWiring` gets `onRoundEnd`; `syncFrame` fires it once
+- [x] Step 3: wiring — `createFeedbackWiring` gets `onRoundEnd`; `syncFrame` fires it once
       per `running → ended` transition; `reset()` re-arms it for the next round.
-- [ ] Step 4: retry — `restartRound` stops the finale (new optional `stopFinale` seam).
-- [ ] Step 5: unit tests — transition fires once; loop flag + musicGain routing; stop on
+- [x] Step 4: retry — `restartRound` stops the finale (new optional `stopFinale` seam).
+- [x] Step 5: unit tests — transition fires once; loop flag + musicGain routing; stop on
       retry; missing-track and un-armed no-op paths.
 
 ## Edge cases
