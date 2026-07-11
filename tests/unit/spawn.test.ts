@@ -5,7 +5,7 @@ import {
   stepSpawn,
   type SpawnCursor,
 } from '../../src/systems/spawn.ts';
-import { PATHS_BY_ID, WAVE_SCHEDULE } from '../../src/core/config.ts';
+import { DEMON_TYPES_BY_ID, PATHS_BY_ID, WAVE_SCHEDULE } from '../../src/core/config.ts';
 import { makeGameState, makeDemon } from '../factories.ts';
 import type { GameState } from '../../src/core/state.ts';
 
@@ -71,6 +71,22 @@ describe('AC-T05-1 — spawn at a due slot', () => {
       y: start.y,
       z: start.z,
     });
+  });
+
+  it('spawns every demon with hp equal to its type maxHp (AC-T01-1/3)', () => {
+    const state = makeGameState();
+    const cursor = createSpawnCursor();
+    const lastSlot = WAVE_SCHEDULE[WAVE_SCHEDULE.length - 1]!;
+
+    stepSpawn({ state, cursor, fixedDtMs: lastSlot.atMs });
+
+    const spawnedTypeIds = new Set(state.demons.map((d) => d.typeId));
+    expect(spawnedTypeIds.size).toBeGreaterThanOrEqual(3);
+    for (const demon of state.demons) {
+      const maxHp = DEMON_TYPES_BY_ID[demon.typeId]!.maxHp;
+      expect(demon.hp).toBe(maxHp);
+      expect(demon.hp).toBeGreaterThan(0);
+    }
   });
 
   it('does not spawn before the first slot is due', () => {

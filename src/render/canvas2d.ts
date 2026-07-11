@@ -133,6 +133,7 @@ const worldToScreen = (world: WorldPoint, view: Viewport): ScreenPoint => ({
 const DEMON_COLORS: Record<DemonName, string> = {
   fast: '#e5484d',
   brute: '#30a46c',
+  baron: '#8e4ec6',
 };
 const UNKNOWN_DEMON_COLOR = '#8b8b8b';
 

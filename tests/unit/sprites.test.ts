@@ -72,7 +72,7 @@ describe('loadSprites — fail-soft (AC-T10-2)', () => {
 
 describe('validateSpriteKeys — boot-time integrity (T-10 edge case)', () => {
   const types = (spriteKey: string): DemonType[] => [
-    { id: 1, name: 'fast', speed: 0.25, pointValue: 10, spriteKey },
+    { id: 1, name: 'fast', speed: 0.25, pointValue: 10, maxHp: 1, spriteKey },
   ];
 
   it('passes when every spriteKey has authored art', () => {

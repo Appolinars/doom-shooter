@@ -50,7 +50,30 @@ const BRUTE: PixelArt = {
   ],
 };
 
+/**
+ * Towering purple baron — matches the `baron` demon color (#8e4ec6). Placeholder
+ * grid until T-07 swaps the bundled art for the authored sprite files.
+ */
+const BARON: PixelArt = {
+  palette: { p: '#8e4ec6', d: '#4c2373', e: '#f2d024' },
+  rows: [
+    '.d........d.',
+    '.dpd....dpd.',
+    '.dppd..dppd.',
+    'dppppppppppd',
+    'dpepppppepd.',
+    'dpepppppepd.',
+    'dppppppppppd',
+    'dppdddddppd.',
+    'dpppddddpppd',
+    'dppppppppppd',
+    '.dppppppppd.',
+    '..dddddddd..',
+  ],
+};
+
 export const DEMON_ART: Readonly<Record<string, PixelArt>> = {
   'demon-fast': FAST,
   'demon-brute': BRUTE,
+  'demon-baron': BARON,
 };

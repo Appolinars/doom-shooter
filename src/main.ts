@@ -40,7 +40,7 @@ const installDebugApi = ({ state, frameStats }: { state: GameState; frameStats: 
       const type = DEMON_TYPES[i % DEMON_TYPES.length]!;
       const progress = (i % 10) / 10;
       const point = pathPointAt(path, progress);
-      state.demons.push({ id: 100_000 + i, typeId: type.id, pathId: path.id, progress, x: point.x, y: point.y, z: point.z });
+      state.demons.push({ id: 100_000 + i, typeId: type.id, pathId: path.id, hp: type.maxHp, progress, x: point.x, y: point.y, z: point.z });
     }
   };
 
