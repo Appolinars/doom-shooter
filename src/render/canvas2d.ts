@@ -10,7 +10,6 @@ import type { SpriteAtlas, SpriteImage } from '../assets/sprites.ts';
 import {
   VIRTUAL_WIDTH,
   VIRTUAL_HEIGHT,
-  SHELL_CAPACITY,
   DEMON_TYPES_BY_ID,
   type DemonName,
 } from '../core/config.ts';
@@ -257,27 +256,11 @@ const drawHud = (view: Viewport, state: GameState): void => {
   ctx.textAlign = 'right';
   ctx.fillText(formatTime(round.timeLeftMs), cssWidth - 16, 16);
 
-  drawShells(view, weapon.shellsLoaded);
-  if (weapon.status === 'reloading') {
+  // Interim not-ready cue until the T-08 viewmodel sprite carries the pump visual.
+  if (weapon.status === 'pumping') {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#f2d024';
-    ctx.fillText('RELOADING', cssWidth / 2, cssHeight - 60);
-  }
-};
-
-const SHELL_PIP_WIDTH = 14;
-const SHELL_PIP_GAP = 6;
-const SHELL_PIP_HEIGHT = 20;
-
-const drawShells = (view: Viewport, shellsLoaded: number): void => {
-  const { ctx, cssWidth, cssHeight } = view;
-  const totalWidth = SHELL_CAPACITY * SHELL_PIP_WIDTH + (SHELL_CAPACITY - 1) * SHELL_PIP_GAP;
-  const startX = (cssWidth - totalWidth) / 2;
-  const y = cssHeight - 32;
-  for (let i = 0; i < SHELL_CAPACITY; i++) {
-    const x = startX + i * (SHELL_PIP_WIDTH + SHELL_PIP_GAP);
-    ctx.fillStyle = i < shellsLoaded ? '#f2d024' : '#3a3a40';
-    ctx.fillRect(x, y, SHELL_PIP_WIDTH, SHELL_PIP_HEIGHT);
+    ctx.fillText('PUMPING', cssWidth / 2, cssHeight - 60);
   }
 };
 

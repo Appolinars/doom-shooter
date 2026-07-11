@@ -3,10 +3,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { createInitialGameState } from '../../src/core/state.ts';
-import { ROUND_DURATION_MS, SHELL_CAPACITY, WAVE_SCHEDULE } from '../../src/core/config.ts';
+import { ROUND_DURATION_MS, WAVE_SCHEDULE } from '../../src/core/config.ts';
 
 describe('createInitialGameState', () => {
-  it('starts a running round with a full timer, full magazine and empty entity arrays', () => {
+  it('starts a running round with a full timer, a ready weapon and empty entity arrays', () => {
     const state = createInitialGameState();
 
     expect(state.round).toEqual({
@@ -18,9 +18,8 @@ describe('createInitialGameState', () => {
       resolvedCount: 0,
     });
     expect(state.weapon).toEqual({
-      shellsLoaded: SHELL_CAPACITY,
       status: 'ready',
-      reloadRemainingMs: 0,
+      pumpRemainingMs: 0,
     });
     expect(state.demons).toEqual([]);
     expect(state.shots).toEqual([]);

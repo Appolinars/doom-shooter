@@ -5,13 +5,13 @@
 
 import type { Demon } from '../entities/demon.ts';
 import type { Shot } from '../entities/shot.ts';
-import { ROUND_DURATION_MS, SHELL_CAPACITY, WAVE_SCHEDULE } from './config.ts';
+import { ROUND_DURATION_MS, WAVE_SCHEDULE } from './config.ts';
 
 export type { Demon } from '../entities/demon.ts';
 export type { Shot, ShotOutcome, ShotTarget } from '../entities/shot.ts';
 
 export type RoundStatus = 'running' | 'ended';
-export type WeaponStatus = 'ready' | 'reloading';
+export type WeaponStatus = 'ready' | 'pumping';
 
 /** Current round only — no history (Non-goal N7). */
 export interface Round {
@@ -28,14 +28,15 @@ export interface Round {
   resolvedCount: number;
 }
 
-/** The single shotgun. */
+/**
+ * The single shotgun — unlimited ammo, two-state machine (game-feel ADR-0002):
+ * every shot enters `pumping`; the pump is the only fire gate.
+ */
 export interface Weapon {
-  /** 0..SHELL_CAPACITY; consuming the last shell starts reload (Flow 5). */
-  shellsLoaded: number;
-  /** try-fire while `reloading` is blocked, no shell consumed (AC-02). */
+  /** try-fire while `pumping` is blocked and dropped (AC-02). */
   status: WeaponStatus;
   /** ≥ 0, decremented by the fixed step — never wall-clock (ADR-0002). */
-  reloadRemainingMs: number;
+  pumpRemainingMs: number;
 }
 
 /**
@@ -66,9 +67,9 @@ export interface GameState {
 /**
  * Fresh round-start GameState — the production initializer main.ts boots from. The test
  * factory in tests/factories.ts mirrors these defaults; kept in sync by construction.
- * Round-start values come straight from static config: full timer, full magazine, and
- * scheduledCount fixed to the wave-schedule length (Round.scheduledCount is "set at round
- * start"). Everything else starts empty.
+ * Round-start values come straight from static config: full timer, a ready (un-pumped)
+ * weapon, and scheduledCount fixed to the wave-schedule length (Round.scheduledCount is
+ * "set at round start"). Everything else starts empty.
  */
 export const createInitialGameState = (): GameState => ({
   round: {
@@ -80,9 +81,8 @@ export const createInitialGameState = (): GameState => ({
     resolvedCount: 0,
   },
   weapon: {
-    shellsLoaded: SHELL_CAPACITY,
     status: 'ready',
-    reloadRemainingMs: 0,
+    pumpRemainingMs: 0,
   },
   demons: [],
   shots: [],

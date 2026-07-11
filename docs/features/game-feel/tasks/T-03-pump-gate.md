@@ -7,7 +7,7 @@ priority: P1
 estimate: S
 blocks: [T-08]
 blocked_by: []
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -48,10 +48,18 @@ Then `pumpRemainingMs` decreases by the fixed-step delta only; at ≤ 0 the weap
 
 ## Atomic checklist
 
-- [ ] Step 1: `config.ts` — add `PUMP_DURATION_MS = 350` (placeholder-tunable, PRD §8); **remove** `SHELL_CAPACITY`, `RELOAD_DURATION_MS`.
-- [ ] Step 2: `state.ts` — `Weapon.status` union becomes `'ready' | 'pumping'` (**drop** `'reloading'`); add `pumpRemainingMs: number`; **remove** `shells` / `reloadRemainingMs`.
-- [ ] Step 3: `weapon.ts` — ready fire always succeeds → enter `'pumping'`; tick `pumpRemainingMs` down on the fixed step; exit to `'ready'`; fire while `'pumping'` → blocked/dropped. **Remove** shell-spend + reload logic.
-- [ ] Step 4: unit tests — AC-02 gate (fire dropped while pumping); pump→ready transition after `PUMP_DURATION_MS`; re-run base drift test with pump active. **Delete/rewrite** the base reload/shell tests.
+- [x] Step 1: `config.ts` — add `PUMP_DURATION_MS = 350` (placeholder-tunable, PRD §8); **remove** `SHELL_CAPACITY`, `RELOAD_DURATION_MS`.
+- [x] Step 2: `state.ts` — `Weapon.status` union becomes `'ready' | 'pumping'` (**drop** `'reloading'`); add `pumpRemainingMs: number`; **remove** `shells` / `reloadRemainingMs`.
+- [x] Step 3: `weapon.ts` — ready fire always succeeds → enter `'pumping'`; tick `pumpRemainingMs` down on the fixed step; exit to `'ready'`; fire while `'pumping'` → blocked/dropped. **Remove** shell-spend + reload logic.
+- [x] Step 4: unit tests — AC-02 gate (fire dropped while pumping); pump→ready transition after `PUMP_DURATION_MS`; re-run base drift test with pump active. **Delete/rewrite** the base reload/shell tests.
+
+## Results (2026-07-11)
+
+- Weapon is now `{ status: 'ready' | 'pumping', pumpRemainingMs }` — shells/reload fully removed from `config.ts`/`state.ts`/`weapon.ts`; zero reload references left in `src/` + `tests/`.
+- Ordering locked deterministic: pump advances **before** intents drain, so a fire on the exact completion step fires (mirrors the old reload edge case).
+- `weapon.test.ts` rewritten as the pump suite (gate / always-fires / deterministic timer / exact-completion-step / multi-intent / drain — incl. a 20-volley rapid-fire spam test proving ammo never runs out); factories + state tests updated.
+- HUD ripple in `canvas2d.ts`: shell pips + RELOADING text removed; interim centered "PUMPING" cue until the T-08 viewmodel sprite takes over.
+- Drift/aim tests untouched and green (pump uses only the fixed-step clock). 103 unit + 5 E2E green; typecheck + lint clean.
 
 ## Edge cases
 

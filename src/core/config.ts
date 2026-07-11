@@ -15,8 +15,12 @@
 export const VIRTUAL_WIDTH = 1000;
 export const VIRTUAL_HEIGHT = 1000;
 
-/** Shells a full magazine holds; consuming the last one starts a reload (Flow 5). */
-export const SHELL_CAPACITY = 8;
+/**
+ * Pump duration after every shot (game-feel ADR-0002): the only weapon gate — no
+ * magazine, unlimited ammo (PRD §1 amendment). Decremented by the fixed step, never
+ * wall-clock. Tunable; 350 ms resolved in the game-feel PRD §8 OQ.
+ */
+export const PUMP_DURATION_MS = 350;
 
 /**
  * World-space crosshair hit radius (T-07): a demon is "under the crosshair" when its
@@ -28,12 +32,6 @@ export const DEMON_HIT_RADIUS = 60;
 
 /** Round length before the timer end-branch fires (ADR-0004). */
 export const ROUND_DURATION_MS = 60_000;
-
-/**
- * Reload duration once the last shell is spent (Flow 5). Decremented by the fixed
- * step, never wall-clock (ADR-0002). Placeholder tuning value — shape locked here.
- */
-export const RELOAD_DURATION_MS = 1_500;
 
 export type DemonName = 'fast' | 'brute' | 'baron';
 

@@ -3,7 +3,7 @@
 // per-test overrides apply with no shared global state between tests.
 
 import type { Demon, GameState, Round, Shot, Weapon, FireIntent } from '../src/core/state.ts';
-import { DEMON_TYPES_BY_ID, ROUND_DURATION_MS, SHELL_CAPACITY, WAVE_SCHEDULE } from '../src/core/config.ts';
+import { DEMON_TYPES_BY_ID, ROUND_DURATION_MS, WAVE_SCHEDULE } from '../src/core/config.ts';
 
 export function makeRound(overrides: Partial<Round> = {}): Round {
   return {
@@ -19,9 +19,8 @@ export function makeRound(overrides: Partial<Round> = {}): Round {
 
 export function makeWeapon(overrides: Partial<Weapon> = {}): Weapon {
   return {
-    shellsLoaded: SHELL_CAPACITY,
     status: 'ready',
-    reloadRemainingMs: 0,
+    pumpRemainingMs: 0,
     ...overrides,
   };
 }
