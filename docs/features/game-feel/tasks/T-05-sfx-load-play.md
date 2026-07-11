@@ -7,7 +7,7 @@ priority: P1
 estimate: S
 blocks: [T-09]
 blocked_by: [T-04]
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -44,10 +44,10 @@ Then each maps to a load slot; unresolved slots are treated as missing (AC-T05-2
 
 ## Atomic checklist
 
-- [ ] Step 1: `sfx.ts` — `loadSfx(manifest)`: fetch + `decodeAudioData` each key; store decoded buffers; log-once on failure, keep going.
-- [ ] Step 2: `play(key)` — look up buffer; if absent, silent no-op; else create a bufferSource → `sfxGain`, register with the voice pool (T-04 cap).
-- [ ] Step 3: define the SFX key manifest (the 9 keys, §3.1); paths per [[../assets-manifest.md]] §3.1 (`audio/<key>.wav`).
-- [ ] Step 4: unit tests — loaded key plays one capped voice; missing key = no-op/no-throw + single log; decode-failure path.
+- [x] Step 1: `sfx.ts` — `loadSfx(manifest)`: fetch + `decodeAudioData` each key; store decoded buffers; log-once on failure, keep going.
+- [x] Step 2: `play(key)` — look up buffer; if absent, silent no-op; else create a bufferSource → `sfxGain`, register with the voice pool (T-04 cap).
+- [x] Step 3: define the SFX key manifest (the 9 keys, §3.1); paths per [[../assets-manifest.md]] §3.1 (`audio/<key>.wav`).
+- [x] Step 4: unit tests — loaded key plays one capped voice; missing key = no-op/no-throw + single log; decode-failure path.
 
 ## Edge cases
 
