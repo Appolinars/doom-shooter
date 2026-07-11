@@ -7,7 +7,7 @@ priority: P1
 estimate: M
 blocks: [T-08]
 blocked_by: []
-status: todo
+status: done
 context_budget: 4500
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -49,11 +49,11 @@ Then it yields the current viewmodel frame (firing→pump→idle) as a pure func
 
 ## Atomic checklist
 
-- [ ] Step 1: `config.ts` — `SHOT_SPLAT_MS`, death-anim duration constants.
-- [ ] Step 2: `effects.ts` — store shape: active splats (pos + age), active death visuals (typeId + age), viewmodel clock (phase + elapsed).
-- [ ] Step 3: `advance(dtMs)` + `pruneExpired()` — age everything on the rAF delta; drop expired; bound the collections.
-- [ ] Step 4: spawn API — `spawnSplat(pos)`, `spawnDeath(typeId, pos)`, `onFire(phaseSeed)`; read API for the renderer.
-- [ ] Step 5: unit tests — splat pruned at `SHOT_SPLAT_MS`; death visual runs to completion independent of any round state; store references no `GameState`; collections stay bounded under a burst.
+- [x] Step 1: `config.ts` — `SHOT_SPLAT_MS`, death-anim duration constants.
+- [x] Step 2: `effects.ts` — store shape: active splats (pos + age), active death visuals (typeId + age), viewmodel clock (phase + elapsed).
+- [x] Step 3: `advance(dtMs)` + `pruneExpired()` — age everything on the rAF delta; drop expired; bound the collections.
+- [x] Step 4: spawn API — `spawnSplat(pos)`, `spawnDeath(typeId, pos)`, `onFire(phaseSeed)`; read API for the renderer.
+- [x] Step 5: unit tests — splat pruned at `SHOT_SPLAT_MS`; death visual runs to completion independent of any round state; store references no `GameState`; collections stay bounded under a burst.
 
 ## Edge cases
 
