@@ -8,7 +8,7 @@ import type { Shot } from '../entities/shot.ts';
 import { ROUND_DURATION_MS, SHELL_CAPACITY, WAVE_SCHEDULE } from './config.ts';
 
 export type { Demon } from '../entities/demon.ts';
-export type { Shot, ShotOutcome } from '../entities/shot.ts';
+export type { Shot, ShotOutcome, ShotTarget } from '../entities/shot.ts';
 
 export type RoundStatus = 'running' | 'ended';
 export type WeaponStatus = 'ready' | 'reloading';

@@ -7,7 +7,7 @@ priority: P1
 estimate: S
 blocks: [T-09]
 blocked_by: [T-01]
-status: todo
+status: done
 context_budget: 4000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -48,10 +48,17 @@ Then it counts as a normal miss (existing escape path), adds no score, and its h
 
 ## Atomic checklist
 
-- [ ] Step 1: `hit.ts` — on front-most hit, branch: `hp--`; if `hp > 0` return a "damaged, alive" outcome (no despawn, no score); if `hp == 0` despawn + `applyKill`.
-- [ ] Step 2: record the `Shot`/hit outcome enough for T-08/T-09 to show a splat on any hit and a death visual on a kill (do not couple to render — just the state/outcome).
-- [ ] Step 3: confirm `step.ts` order and `score.ts` are untouched (ADR-0001 minimal-diff).
-- [ ] Step 4: unit tests — 2-HP takes two shots to score, 4-HP takes four; non-decreasing-score property over a random kill sequence; AC-08 hurt-then-escape via the existing miss path.
+- [x] Step 1: `hit.ts` — on front-most hit, branch: `hp--`; if `hp > 0` return a "damaged, alive" outcome (no despawn, no score); if `hp == 0` despawn + `applyKill`.
+- [x] Step 2: record the `Shot`/hit outcome enough for T-08/T-09 to show a splat on any hit and a death visual on a kill (do not couple to render — just the state/outcome).
+- [x] Step 3: confirm `step.ts` order and `score.ts` are untouched (ADR-0001 minimal-diff).
+- [x] Step 4: unit tests — 2-HP takes two shots to score, 4-HP takes four; non-decreasing-score property over a random kill sequence; AC-08 hurt-then-escape via the existing miss path.
+
+## Results (2026-07-11)
+
+- `ShotOutcome` extended to `'hit' | 'kill' | 'miss'` ('hit' = connected, survived); `Shot` gains optional `target` (`typeId`/x/y/z captured at resolve time) — enough for T-08/T-09 splat + death cues without coupling to render.
+- `resolveFire`: `hp--` inline; despawn + `resolvedCount` + `applyKill` only on `hp === 0`. `score.ts` and `step.ts` diff = 0.
+- Ripple: `drawShots` in `canvas2d.ts` now branches on `!== 'miss'` (a kill would have drawn the miss X); `ShotTarget` re-exported from `state.ts`.
+- Tests: multi-shot decrement (brute 2, baron 4), non-decreasing-score property over a 30-demon random sequence, AC-08 hurt-escape via `stepSpawn`, overlap edge case; base tests extended in place (brute kill = two shots, AC-04b uses a 1-HP hurt brute). 102 unit + 5 E2E green.
 
 ## Edge cases
 

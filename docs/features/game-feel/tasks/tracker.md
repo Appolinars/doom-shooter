@@ -13,7 +13,7 @@ Statuses: `todo` → `in_progress` → `in_review` → `done` (or `blocked`).
 | ID | Title | Wave | Estimate | Deps | Status | PR |
 |----|-------|------|----------|------|--------|----|
 | [T-01](./T-01-demon-hp-model.md) | Demon HP model | 1 | S | — | done | local merge |
-| [T-02](./T-02-hit-damage.md) | HP damage inline in hit path | 1 | S | T-01 | todo | — |
+| [T-02](./T-02-hit-damage.md) | HP damage inline in hit path | 1 | S | T-01 | done | local merge |
 | [T-03](./T-03-pump-gate.md) | Pump gate (fixed-step weapon state) | 1 | S | — | todo | — |
 | [T-04](./T-04-web-audio-graph.md) | Web Audio graph, arm-on-gesture | 2 | M | — | todo | — |
 | [T-05](./T-05-sfx-load-play.md) | SFX load/decode + play, fail-soft | 2 | S | T-04 | todo | — |

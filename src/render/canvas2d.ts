@@ -200,7 +200,7 @@ const drawShots = (view: Viewport, shots: readonly Shot[]): void => {
   const { ctx } = view;
   for (const shot of shots) {
     const { sx, sy } = worldToScreen({ x: shot.aimX, y: shot.aimY }, view);
-    if (shot.outcome === 'hit') {
+    if (shot.outcome !== 'miss') {
       ctx.beginPath();
       ctx.arc(sx, sy, 22, 0, Math.PI * 2);
       ctx.lineWidth = 3;
