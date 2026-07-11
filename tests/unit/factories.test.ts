@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { makeDemon, makeRound, makeGameState, makeWeapon } from '../factories.ts';
-import { SHELL_CAPACITY, WAVE_SCHEDULE } from '../../src/core/config.ts';
+import { WAVE_SCHEDULE } from '../../src/core/config.ts';
 
 describe('test factories (AC-T02-3)', () => {
   it('makeRound returns a contract-valid running default', () => {
@@ -13,11 +13,10 @@ describe('test factories (AC-T02-3)', () => {
     expect(round.timeLeftMs).toBeGreaterThan(0);
   });
 
-  it('makeWeapon returns a full, ready weapon', () => {
+  it('makeWeapon returns a ready, un-pumped weapon', () => {
     const weapon = makeWeapon();
-    expect(weapon.shellsLoaded).toBe(SHELL_CAPACITY);
     expect(weapon.status).toBe('ready');
-    expect(weapon.reloadRemainingMs).toBe(0);
+    expect(weapon.pumpRemainingMs).toBe(0);
   });
 
   it('makeDemon default sits at path start (progress 0, far z)', () => {
