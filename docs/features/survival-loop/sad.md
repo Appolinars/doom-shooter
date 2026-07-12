@@ -288,18 +288,14 @@ sequenceDiagram
 <!-- 📌 Приклад: «500 IC → партиціонування за кварталом» (не «при зростанні подумаємо»).    -->
 <!-- 🎯 Можна N/A для XS/S функцій, що переюзають існуюче розгортання без змін.            -->
 
-<Topology in 2-3 sentences. Where it runs (k8s / VM / serverless), replicas, scaling thresholds.>
+Topology unchanged: a static Vite build, single page, no server; publishing the demo remains parked (post-feature). The feature adds no deployment unit — everything ships inside the same bundle.
 
 **Monitoring:**
-- <Metrics — e.g. Prometheus `<metric_name>`>
-- <Alerts — e.g. "outbox lag > 10 min → page on-call">
-- <Tracing — e.g. OpenTelemetry HTTP spans>
+- Frame-time: existing `createFrameTimer` FPS dev overlay (rolling mean + p95) — the measurement source for QG-2.
+- No alerts or tracing — client-side game, no ops surface.
 
 **Scaling thresholds:**
-- <e.g. 500 IC × 5 goals × 26 checkpoints/Q = 65k rows/year — comfortable in one table>
-- <e.g. partitioning by quarter at >500k rows/year>
-
-<!-- For XS/S that doesn't change deployment: <!-- N/A: feature reuses existing deployment unit -->. -->
+- ≤ 32 concurrent live entities (demons + fireballs) at any wave — the single performance guard for late waves; enforced at the generator (ADR-0002), asserted by a stress test.
 
 ## 8. Crosscutting concepts
 
@@ -312,13 +308,15 @@ sequenceDiagram
 
 | Concept | Convention | Where defined |
 |---|---|---|
-| Logging | <e.g. structured slog, fields `module=<name>`> | <CLAUDE.md §X or here> |
-| Authentication | <e.g. JWT via session middleware> | <CLAUDE.md §X> |
-| Error handling | <e.g. domain sentinel → ports/errors.go → apperr JSON> | <CLAUDE.md §X> |
-| ID strategy | <e.g. UUID v7 in app layer> | <CLAUDE.md §X> |
-| Internationalisation | <e.g. N/A, English only> | — |
-| Observability | <e.g. OpenTelemetry on HTTP boundaries> | — |
-| Outbox / events | <module-specific patterns, if any> | <here> |
+| Determinism | systems never read wall-clock; render/effects age by rAF delta | basic-shooting-range ADR-0004, §2 |
+| Feedback wiring | poll/diff each rendered frame; the fixed step stays event-free | game-feel, `src/wiring.ts` |
+| Error handling | fail-soft: assets and storage degrade silently, play is never blocked | base AC-06 pattern, ADR-0003 |
+| ID strategy | in-memory incremental integers per entity kind | storage rules / base SAD §8 |
+| Config-as-data | values in `src/core/config.ts`, invariants in `src/systems/*` | `.claude/rules/migrations.md` |
+| Input gating | gameplay input only while `status === 'running'` (extends focus/scope gating) | AC-12, ADR-0001 |
+| Audio | single bus, first-gesture arming, 8-voice steal-oldest, `musicGain` seam | game-feel |
+| Persistence | versioned key `doom-shooter.v<N>`, no PII, version bump = migration + unit test | `.claude/rules/migrations.md` |
+| Internationalisation | N/A — English only | — |
 
 ## 9. Architecture decisions
 
