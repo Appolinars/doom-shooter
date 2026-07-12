@@ -327,10 +327,13 @@ Topology unchanged: a static Vite build, single page, no server; publishing the 
 
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use sliding window for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate outbox worker in API process"> | Accepted | §<N> |
+| 0001 | Extend Round into a mode-aware run state | Accepted | §4 |
+| 0002 | Use a single parametric wave generator for both modes | Accepted | §4 |
+| 0003 | Put the per-mode record behind a fail-soft store with a versioned localStorage key | Accepted | §4 |
+| 0004 | Model the fireball as a first-class shootable entity kind | Accepted | §4 |
+| 0005 | Build start/end screens as canvas visuals with DOM controls | Accepted | §4 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/survival-loop/adr/NNNN-<title>.md`.
 
 ## 10. Quality requirements
 
