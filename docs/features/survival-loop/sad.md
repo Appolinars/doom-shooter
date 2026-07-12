@@ -49,23 +49,26 @@ Candidate #4 left out deliberately: player-hit feedback latency ≤ 100 ms is in
 <!-- 📌 Приклад: «Postgres 18» (не «Postgres»); «дедлайн Q3 — жорсткий» (не «бажано»).    -->
 
 **Technical.**
-- <Language + version, e.g. Go 1.26>
-- <Framework + version, e.g. chi v5.1, pgx v5.7>
-- <Datastore + version, e.g. Postgres 18>
-- <Architecture convention, e.g. hexagonal per CLAUDE.md>
+- TypeScript 5.7 (ESM), no runtime framework — vanilla Canvas 2D + Web Audio.
+- Vite 6 (build/dev), Vitest 2.1 (unit), Playwright 1.49 (E2E), ESLint 9 + typescript-eslint 8.
+- Browser-only client, no backend (PRD Non-goal N2).
+- Fixed-step core: `STEP_MS = 1000/60`, `MAX_STEPS_PER_FRAME = 5`; systems never read wall-clock (basic-shooting-range ADR-0004).
+- One central mutable `GameState`, plain structs, no ECS (basic-shooting-range ADR-0003); system order fixed in `src/core/step.ts`.
+- Render/audio decoupled via poll/diff wiring — the fixed step stays event-free (game-feel convention).
 
 **Organisational.**
-- <Effort budget, e.g. 3 person-weeks>
-- <Deadline, e.g. 2026-Q3 hard>
-- <Team composition, e.g. 1 backend + 0.5 frontend>
+- Solo dev, personal pet-project — no hard deadline.
+- Endless tuning budget: 3 tuning evenings (PRD §8 default); fallback — Survive-60s becomes the primary mode.
+- Delivery in 3 stages, each ending green and playable (PRD §2).
 
 **Conventions.**
-- <Link to CLAUDE.md or project conventions>
-- <Naming, ID strategy, error-handling pattern>
+- `.claude/rules/migrations.md` — storage contract: **this feature fires reopen-trigger #1** → versioned localStorage key `doom-shooter.v<N>`, one JSON document, version bump = migration with a unit test per step, no PII ever.
+- `src/core/config.ts` holds data only; invariants live in `src/systems/*`.
+- IDs: in-memory incremental integers per entity kind.
+- E2E via `?e2e` debug API (`window.__doom`); unit factories in `tests/factories.ts` mirror state defaults.
 
 **Regulatory / external.**
-- <e.g. GDPR — user deletion behavior per ADR-NNNN>
-- <e.g. SOC2, PCI — applicable controls>
+- None. No PII (storage rules); record tampering via devtools accepted (PRD §6.1); license-clean asset sources only.
 
 ## 3. Context and scope
 
