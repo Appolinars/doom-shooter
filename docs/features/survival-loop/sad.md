@@ -344,22 +344,22 @@ ADR files live under `docs/features/survival-loop/adr/NNNN-<title>.md`.
 <!--           ДОСЛІВНО (не округлюй p95 ≤250мс до ≤300мс — це F6-помилка критика).        -->
 <!-- 📌 Приклад: «p95 ≤500 мс на UPDATE блоку, перевіримо k6 load test 100 req/s».        -->
 
-Each top-3 goal from §1 expanded into a full scenario:
+Each top-3 goal from §1 expanded into a full scenario (numbers verbatim from PRD §6 NFR):
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behavior with numbers from PRD NFR>
-- **How verify:** <test / chaos drill / load test / observability>
+**QG-1. Determinism preserved**
+- **When:** the same run advances at 60 Hz and at 144 Hz refresh rates.
+- **Then:** timing drift ≤ 1%; waves/combo/fireballs advance only on the fixed step, 0 wall-clock reads.
+- **How verify:** the existing elapsed-time unit test on two simulated refresh rates, extended to generated waves.
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-2. Late-wave performance**
+- **When:** a late-wave stress run with the entity cap active.
+- **Then:** ≥ 30 FPS (frame-time p95 ≤ 33.3 ms); concurrent live entities (demons + fireballs) ≤ 32 at any moment, any wave.
+- **How verify:** rAF frame-time profiler (existing `createFrameTimer`) during a late-wave stress run + a unit/stress test asserting the cap under a long generated run.
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-3. Fail-soft record persistence**
+- **When:** storage is unavailable or holds corrupt data when a run ends.
+- **Then:** 100% of runs reach their end screen; the record degrades to session-only and the player is never blocked from playing.
+- **How verify:** E2E run with storage disabled/corrupted.
 
 ## 11. Risks and technical debt
 
@@ -376,12 +376,15 @@ Each top-3 goal from §1 expanded into a full scenario:
 
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Outbox lag may reach hours during downstream outage> | Medium | <Alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event schema versioning in v1> | Medium | <ADR-NNNN planned for v2, graceful handling of unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from Step-7 Save-as-OQ> | <owner> |
+| Endless escalation may not be fun within the tuning budget | High | 3 tuning evenings (§2); fallback: Survive-60s becomes the primary mode (PRD §8) | Maksym |
+| The ≤ 32 entity cap may flatten late-wave difficulty once escalation hits it | Medium | escalate speed/toughness after density caps out; observe wave feel in the stress run | Maksym |
+| Existing unit/E2E tests assume an auto-starting round — the start screen breaks them | Medium | extend the `?e2e` debug API with a mode/auto-start parameter; budget test repair explicitly in break-tasks | Maksym |
+| Combo HUD + callouts add per-frame allocations → GC hitches in late waves | Low | reuse the effects pooling patterns; watch frame-time p95 (QG-2) | Maksym |
+| Base glossary amendments (score, round) pre-announced at PRD approval are not yet applied | Low | update the base CONTEXT entries when implementation starts | Maksym |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. Goal entity is not versioned (immutable) — OK for v1, may need audit versioning in v2>
+- Rank thresholds are a fixed table tuned once — after wave tuning they may drift out of line with actual difficulty; re-tune in a follow-up.
+- Zigzag paths are fixed waypoint data (never computed) — may read as repetitive once learned; acceptable per CONTEXT boundary "NOT AI".
 
 ## 12. Glossary
 
@@ -391,8 +394,23 @@ Each top-3 goal from §1 expanded into a full scenario:
 <!--           Один термін може мати дві мови у заголовку: «Goal (Обʼєктив)».              -->
 <!-- 📌 Приклад: «Lesson | урок усередині курсу, що складається з блоків (text, video)». -->
 
+Canonical definitions live in [CONTEXT.md](./CONTEXT.md); this table extracts the terms used in this SAD's body.
+
 | Term | Meaning |
 |---|---|
-| <e.g. Goal> | <quarterly intent in statement form> |
-| <e.g. KR> | <Key Result — measurable target linked to a Goal> |
-| <e.g. Checkpoint> | <bi-weekly progress update on a KR> |
+| run | one attempt at a mode, from start (or retry) to game over / win; NOT a session |
+| game mode | the player-chosen ruleset for a run: Endless or Survive-60s; NOT a difficulty slider |
+| player HP | the player's hit points; each breakthrough demon or landed fireball removes 1; NOT demon HP |
+| player hit | the moment a path-completing demon or unblocked fireball damages the player, with strong feedback |
+| game over | the run-ending state at player HP = 0 (score, stats, rank shown); NOT the survive-60s win |
+| wave | a numbered generated group of demons; wave N+1 is denser/faster/tougher (amends the base term) |
+| combo multiplier | score multiplier growing with consecutive kills, reset on a combo break; never rhythm-gated |
+| far-kill bonus | extra points for killing a demon before it crosses the midpoint of its path |
+| rank | the D–S letter grade of one run, from a fixed threshold table |
+| record | the per-mode best score kept in the player's browser; NOT a leaderboard |
+| start screen | the pre-run screen where the player picks a mode and arms audio; NOT a pause menu |
+| fireball | a shooter-demon projectile, shootable mid-flight; NOT a demon (no path-walking, score, HP tiers) |
+| zigzag path | fixed waypoint data weaving laterally while advancing; NOT AI |
+| fixed step | the deterministic simulation tick (`STEP_MS = 1000/60`); all game logic advances on it |
+| poll/diff wiring | the per-frame state-diff observer that emits SFX/effects, keeping the fixed step event-free |
+| entity cap | the ≤ 32 limit on concurrent live demons + fireballs, enforced at the wave generator |
