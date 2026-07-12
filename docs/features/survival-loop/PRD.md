@@ -3,7 +3,7 @@ status: Draft
 owner: "Maksym Vakulenko"
 reviewers: ["Tech Lead"]
 updated_at: "2026-07-12"
-feature_size:                    # set by sdlc:classify-size, not here
+feature_size: M                  # set by sdlc:classify-size
 stage: "03"
 ticket: "N/A (personal pet-project)"
 ---
