@@ -27,11 +27,12 @@ Stage 3 adds shooter demons whose telegraphed fireballs can be shot down mid-fli
 ## Considered options
 
 1. **Separate entity kind + generalized hit-test** — `state.fireballs[]` beside `demons[]`; `hit.ts` collects candidates from both lists and picks the front-most by z (shared `Targetable` surface).
-2. **Fireball as a demon subtype** — `kind: 'fireball'` inside `demons[]` with special-case flags (no score, no combo effect, straight flight).
+2. **Fireball as a demon subtype** — `kind: 'fireball'` inside `demons[]` with special-case flags (no score, no combo effect, straight flight). *Constraint-excluded rather than weighed as an equal: the CONTEXT glossary boundary ("fireball — NOT a demon") already ruled it out; listed because it was presented and rejected during the Socratic walk.*
+3. **Generic `projectiles[]` list shared with future shot kinds** — a broader abstraction hosting fireballs and any later projectile.
 
 ## Decision outcome
 
-**Chosen:** Option 1. The fireball inherits nothing demon-specific, matching the glossary boundary; demon invariants (miss statistics, score logic, HP tiers) stay free of fireball `if`s. Option 2 keeps `hit.ts` untouched but contradicts the CONTEXT glossary and litters every demon system with subtype guards.
+**Chosen:** Option 1. The fireball inherits nothing demon-specific, matching the glossary boundary; demon invariants (miss statistics, score logic, HP tiers) stay free of fireball `if`s. Option 3 was rejected as a premature abstraction — the backlog has exactly one projectile kind in sight (YAGNI); Option 2 fell to the glossary constraint as noted above.
 
 ## Consequences
 

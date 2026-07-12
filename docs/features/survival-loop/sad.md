@@ -2,7 +2,7 @@
 status: Draft
 owner: "Maksym Vakulenko"
 reviewers: ["Tech Lead"]
-updated_at: "2026-07-12"
+updated_at: "2026-07-13"
 feature_size: M
 stage: "04-05"
 ticket: "N/A (personal pet-project)"
@@ -252,11 +252,14 @@ sequenceDiagram
     wiring->>state: diff sees running → ended
     wiring->>rank: compute rank, stats, best moment
     wiring->>records: submit final score for the mode
-    alt storage healthy
-        records->>ls: read record, write if beaten
-        records-->>wiring: NEW RECORD! / kept
-    else storage unavailable or corrupt
-        records-->>wiring: session-only record (error swallowed)
+    Note over records: compares against the in-memory record (read once at boot, ADR-0003)
+    alt score beats the record and storage healthy
+        records->>ls: write updated record
+        records-->>wiring: NEW RECORD!
+    else score beats the record, storage unavailable
+        records-->>wiring: NEW RECORD! (session-only, write swallowed)
+    else record stands
+        records-->>wiring: record kept
     end
     renderer->>state: draw end screen — always shown
 ```
@@ -295,7 +298,7 @@ Topology unchanged: a static Vite build, single page, no server; publishing the 
 - No alerts or tracing — client-side game, no ops surface.
 
 **Scaling thresholds:**
-- ≤ 32 concurrent live entities (demons + fireballs) at any wave — the single performance guard for late waves; enforced at the generator (ADR-0002), asserted by a stress test.
+- ≤ 32 concurrent live entities (demons + fireballs) at any wave — the single performance guard for late waves; a shared cap helper sums both lists and is consulted by both spawn sites — the wave generator (ADR-0002) and the fireball system (ADR-0004) — asserted by a stress test.
 
 ## 8. Crosscutting concepts
 
@@ -413,4 +416,4 @@ Canonical definitions live in [CONTEXT.md](./CONTEXT.md); this table extracts th
 | zigzag path | fixed waypoint data weaving laterally while advancing; NOT AI |
 | fixed step | the deterministic simulation tick (`STEP_MS = 1000/60`); all game logic advances on it |
 | poll/diff wiring | the per-frame state-diff observer that emits SFX/effects, keeping the fixed step event-free |
-| entity cap | the ≤ 32 limit on concurrent live demons + fireballs, enforced at the wave generator |
+| entity cap | the ≤ 32 limit on concurrent live demons + fireballs — a shared helper consulted by both spawn sites (wave generator + fireball system) |
