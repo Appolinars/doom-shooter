@@ -22,21 +22,24 @@ ticket: "N/A (personal pet-project)"
 <!-- 📋 Що писати: 1 абзац intent + 3 рядки топ-3 якості + таблиця stakeholders.        -->
 <!-- 📌 Приклад: «QG-1: швидкість редагування блоку p95 ≤500 мс»                         -->
 
-**Intent.** <One paragraph from PRD §Goals — what we're building and for whom.>
+**Intent.** survival-loop turns the polished shooting gallery into a survival arcade: the player gains HP and a lose condition (game over), two modes — Endless with generated escalating waves and Survive-60s with a timer win — a kill-streak combo multiplier with far-kill bonuses, a D–S rank with stats on the end screen, and a per-mode best score persisted between sessions. Shipped in three independently playable stages (PRD §2, idea-brief §13, Approach C).
 
 **Top-3 quality goals (1-liners; full scenarios in §10):**
 
-1. <e.g. "Availability under partial failure of downstream module">
-2. <e.g. "Performance for EM dashboard under team-scale growth">
-3. <e.g. "Recoverability of checkpoints with <30 min RTO">
+1. **Determinism preserved** — waves/combo/fireballs advance only on the fixed step, 0 wall-clock reads; timing drift ≤ 1% between 60 ↔ 144 Hz.
+2. **Late-wave performance** — ≥ 30 FPS (frame-time p95 ≤ 33.3 ms) with the ≤ 32 live-entity cap active.
+3. **Fail-soft record persistence** — 100% of runs reach their end screen with storage unavailable or corrupt.
+
+Candidate #4 left out deliberately: player-hit feedback latency ≤ 100 ms is inherited from game-feel — the mechanism is already proven, it only extends to the new hit sources.
 
 **Stakeholders.**
 
 | Role | Interest | Sign-off owner? |
 |---|---|---|
-| <e.g. IC> | <feature usage> | No |
-| <e.g. EM> | <dashboard reads> | No |
-| <e.g. Tech Lead> | <SAD approval> | Yes |
+| player (author-as-player) | real stakes, voluntary "one more try" | No |
+| demo guest | replay pull within 1-3 runs, zero onboarding | No |
+| author-as-learner | first M-sized feature through the full SDLC pipeline | No |
+| Tech Lead | SAD approval | Yes |
 
 ## 2. Constraints
 
