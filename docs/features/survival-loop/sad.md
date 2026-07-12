@@ -135,39 +135,63 @@ Each tactical decision in later sections should be traceable to one of these str
 <!--           дерево папок + Mermaid C4Container.                                       -->
 <!-- 📌 Приклад: «web-app, content-api, media-worker, postgres, s3, cdn».                -->
 
-<One paragraph: layered / hexagonal / clean / event-driven. Why.>
+The style is unchanged from the base game: a fixed-step **logic core** (small systems — pure functions mutating one central `GameState`, order fixed in `step.ts`) with **decoupled render/audio** observing state via poll/diff. The feature's new logic lands as five small systems following the existing `systems/*` granularity, one new entity, and one new `storage/` directory for the record adapter (its only localStorage touchpoint, ADR-0003).
 
-**Internal decomposition:**
+**Internal decomposition (feature delta):**
 
 ```
-<e.g. internal/modules/goals/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + outbox impl>
-├── ports/        <HTTP handlers, DTOs, error mapping>
-└── module.go     <self-wiring>
+src/
+├── core/
+│   ├── state.ts        ← Run (ex-Round): + mode, playerHp, outcome, 'idle' status; + fireballs[]; + combo
+│   ├── config.ts       ← + mode params, escalation params, HP/damage, combo/far-kill, rank table
+│   └── step.ts         ← + step order: waves → fireball → damage → run end-conditions
+├── systems/
+│   ├── waves.ts        NEW — parametric wave generator + entity-cap enforcement (ADR-0002)
+│   ├── damage.ts       NEW — player hits (breakthrough demon, landed fireball), game-over trigger
+│   ├── combo.ts        NEW — kill-streak multiplier + far-kill bonus
+│   ├── fireball.ts     NEW — telegraph, flight, shoot-down resolution (stage 3)
+│   ├── rank.ts         NEW — rank D–S, run stats, best-moment line (pure function of the finished run)
+│   ├── score.ts        ← multiplied scoring, stays non-decreasing
+│   ├── hit.ts          ← front-most by z across demons + fireballs (ADR-0004)
+│   ├── round.ts        ← run semantics: hp = 0 → gameOver; survive60 timer → won (ADR-0001)
+│   └── spawn.ts        ← consumes generator output instead of WAVE_SCHEDULE
+├── entities/fireball.ts NEW — typed struct + derived helpers
+├── storage/records.ts   NEW — fail-soft record store (ADR-0003)
+├── render/canvas2d.ts   ← start/end screens, HP indicator, wave number, combo HUD, callouts
+├── wiring.ts            ← run-end → rank/record trigger; callouts via poll/diff
+└── main.ts              ← mode buttons, screen-button visibility (ADR-0005)
 ```
 
 **C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <system> — Containers
+    title doom-shooter — Containers (survival-loop delta)
 
-    Person(user, "<User>")
+    Person(player, "player")
 
-    Container_Boundary(boundary, "<Our System>") {
-        Container(web, "<Web/API container>", "<technology>", "<purpose>")
-        Container(svc, "<Service container>", "<technology>", "<purpose>")
-        ContainerDb(db, "<DB>", "<technology>", "<purpose>")
+    Container_Boundary(game, "doom-shooter (browser, single page)") {
+        Container(input, "input + DOM controls", "TS", "fire intents, mode select, retry; run-state gated")
+        Container(loop, "core loop + step", "TS", "fixed-step driver, system order")
+        Container(systems, "systems/*", "TS", "weapon, hit, score+combo, spawn+waves, damage, fireball, rank, run")
+        Container(state, "GameState", "TS plain structs", "run, demons, fireballs, shots, combo")
+        Container(renderer, "render/*", "Canvas 2D", "world, HUD, start/end screens, callouts")
+        Container(audio, "audio/*", "Web Audio", "SFX bus, music")
+        Container(wiring, "wiring.ts", "TS", "poll/diff feedback, retry, record trigger")
+        Container(records, "storage/records.ts", "TS", "fail-soft record store")
     }
 
-    System_Ext(ext, "<External>", "<purpose>")
+    System_Ext(storage, "Browser localStorage", "doom-shooter.v1")
 
-    Rel(user, web, "<interaction>", "<protocol>")
-    Rel(web, svc, "<service calls>")
-    Rel(svc, db, "<reads/writes>", "<driver>")
-    Rel(svc, ext, "<emits>", "<protocol>")
+    Rel(player, input, "clicks / Esc", "DOM events")
+    Rel(input, state, "writes intents / mode")
+    Rel(loop, systems, "steps in fixed order")
+    Rel(systems, state, "mutate")
+    Rel(renderer, state, "reads each rAF")
+    Rel(wiring, state, "diffs each frame")
+    Rel(wiring, audio, "SFX / music cues")
+    Rel(wiring, records, "record read at boot, write at run end")
+    Rel(records, storage, "get/setItem, fail-soft", "Web Storage API")
 ```
 
 ## 6. Runtime view
