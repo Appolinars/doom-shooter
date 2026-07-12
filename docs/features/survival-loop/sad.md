@@ -203,7 +203,7 @@ C4Container
 <!--           ендпоінт-рівневі sequence-діаграми зʼявляться у stage 06 (define-api).      -->
 <!-- 📌 Приклад: «methodist → web-app: складає чорновик → web-app → content-api: зберегти». -->
 
-Start screen and retry are deliberately not diagrammed — they are trivial status transitions covered by ADR-0001/0005 prose. Full US-by-US coverage is the later `complete-sequence-diagrams` stage.
+Start screen (US-09) and retry (US-04) are deliberately not diagrammed — they are trivial status transitions covered by ADR-0001/0005 prose. Critical flows 1-4 below cover US-01/02/07/08/11; the `### US-NN` sections after them complete the coverage for the remaining stories (stage 06).
 
 **Critical flow 1: breakthrough demon → player hit (AC-01)**
 
@@ -280,6 +280,112 @@ sequenceDiagram
     else fireball reaches the player
         systems->>state: damage: player hit, playerHp -= 1
         wiring->>state: diff → strong feedback
+    end
+```
+
+### US-03: Fight endless escalating waves (AC-03)
+
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    participant renderer as render/*
+    Note over state: Precondition: endless run in progress, wave N live
+    loop->>systems: fixed step
+    systems->>state: waves: wave N exhausted → advance to N+1
+    systems->>state: waves: generate N+1 params (denser / faster / tougher per escalation rule)
+    alt entity cap would be exceeded (ADR-0002)
+        systems->>state: waves: clamp density, escalation continues on speed/toughness
+    end
+    systems->>state: spawn: consume generator output, place N+1 demons
+    renderer->>state: read wave number for HUD
+    Note over state: Postcondition: wave N+1 strictly harder, number visible
+```
+
+### US-05: Build a kill-streak combo (AC-05)
+
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    participant renderer as render/*
+    Note over state: Precondition: run in progress
+    loop->>systems: fixed step
+    systems->>state: hit: killing shot resolves
+    systems->>state: combo: streak++ → multiplier grows
+    systems->>state: score: kill points × multiplier
+    renderer->>state: read combo for HUD
+    alt combo break occurs (per combo-break rule)
+        systems->>state: combo: multiplier resets to base
+        Note over systems,state: earned score untouched — score stays non-decreasing (AC-05)
+        systems->>state: score: subsequent kills at base until a new streak
+    end
+```
+
+### US-06: Earn far-kill bonuses (AC-06)
+
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    participant wiring as wiring.ts
+    participant renderer as render/*
+    Note over state: Precondition: live demon beyond the far-kill threshold (config)
+    loop->>systems: fixed step
+    systems->>state: hit: killing shot resolves
+    systems->>state: combo: far-kill check — distance beyond threshold
+    systems->>state: score: far-kill bonus on top of multiplied kill points
+    wiring->>state: diff (next rendered frame)
+    wiring->>renderer: "SNIPED!" callout
+    alt demon already within threshold
+        systems->>state: score: multiplied kill points only, no bonus, no callout
+    end
+```
+
+### US-10: Win by surviving 60 seconds (AC-13)
+
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    participant wiring as wiring.ts
+    participant renderer as render/*
+    Note over state: Precondition: survive-60s run in progress, playerHp > 0
+    loop->>systems: fixed step (step.ts order)
+    opt same-moment final kill
+        systems->>state: hit: killing shot resolves
+        systems->>state: score+combo: kill points × multiplier (+ far-kill bonus)
+    end
+    systems->>state: run end-condition: 60s timer expired → outcome = won, one-way freeze
+    Note over systems,state: kill scored before the freeze — same step.ts order as AC-02b
+    wiring->>state: diff sees running → ended
+    wiring->>state: rank + record trigger (see flow 3)
+    renderer->>state: draw win screen — not game over
+    alt playerHp hits 0 before the timer
+        systems->>state: run end-condition: outcome = gameOver (flow 2 path)
+    end
+```
+
+### US-12: Face zigzag demons (AC-15)
+
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    Note over state: Precondition: zigzag demon and fireball overlap under the crosshair at different depths
+    loop->>systems: fixed step
+    systems->>state: spawn: zigzag demon takes a weaving path (typed config, no new logic)
+    systems->>state: hit: player fires — collect candidates under crosshair across kinds
+    systems->>state: hit: resolve single hit to front-most by z, demons + fireballs (ADR-0004)
+    alt front-most is the zigzag demon
+        systems->>state: kill resolves: score+combo as usual
+    else front-most is the fireball
+        systems->>state: fireball despawns harmlessly (flow 4 rules)
     end
 ```
 
