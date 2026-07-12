@@ -203,25 +203,82 @@ C4Container
 <!--           ендпоінт-рівневі sequence-діаграми зʼявляться у stage 06 (define-api).      -->
 <!-- 📌 Приклад: «methodist → web-app: складає чорновик → web-app → content-api: зберегти». -->
 
-**Critical flow 1: <flow name>**
+Start screen and retry are deliberately not diagrammed — they are trivial status transitions covered by ADR-0001/0005 prose. Full US-by-US coverage is the later `complete-sequence-diagrams` stage.
+
+**Critical flow 1: breakthrough demon → player hit (AC-01)**
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant API
-    participant Service
-    participant DB
-    User->>API: <request>
-    API->>Service: <call>
-    Service->>DB: <write tx>
-    DB-->>Service: ok
-    Service-->>API: result
-    API-->>User: 201
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    participant wiring as wiring.ts
+    participant renderer as render/*
+    participant audio as audio/*
+    loop->>systems: fixed step
+    systems->>state: demon progress reaches 1 (un-killed)
+    systems->>state: damage: despawn demon, playerHp -= 1
+    wiring->>state: diff (next rendered frame)
+    wiring->>audio: player-hit SFX
+    wiring->>renderer: strong screen feedback (flash/shake)
+    renderer->>state: read HP for HUD indicator
 ```
 
-<!-- For XS/S: 1 flow above is enough. For M+: add 2-4 more (e.g. failure-mode flow, async flow). -->
+**Critical flow 2: same-step final kill + fatal hit (AC-02b, ordering edge)**
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    loop->>systems: fixed step (step.ts order)
+    systems->>state: hit: killing shot resolves
+    systems->>state: score+combo: kill points × multiplier (+ far-kill bonus)
+    systems->>state: damage: player hit lands, playerHp hits 0
+    systems->>state: run end-condition: outcome = gameOver, one-way freeze
+    Note over systems,state: score is written before the freeze — order fixed in step.ts
+```
+
+**Critical flow 3: run end → rank + record, fail-soft branch (AC-07/08/10)**
+
+```mermaid
+sequenceDiagram
+    participant state as GameState
+    participant wiring as wiring.ts
+    participant rank as systems/rank
+    participant records as storage/records.ts
+    participant ls as Browser localStorage
+    participant renderer as render/*
+    wiring->>state: diff sees running → ended
+    wiring->>rank: compute rank, stats, best moment
+    wiring->>records: submit final score for the mode
+    alt storage healthy
+        records->>ls: read record, write if beaten
+        records-->>wiring: NEW RECORD! / kept
+    else storage unavailable or corrupt
+        records-->>wiring: session-only record (error swallowed)
+    end
+    renderer->>state: draw end screen — always shown
+```
+
+**Critical flow 4: fireball counterplay (AC-14, stage 3)**
+
+```mermaid
+sequenceDiagram
+    participant loop as core loop
+    participant systems as systems/*
+    participant state as GameState
+    participant wiring as wiring.ts
+    loop->>systems: fixed step
+    systems->>state: shooter demon telegraphs, spawns fireball
+    alt player shoots it down
+        systems->>state: hit: front-most across kinds = fireball
+        systems->>state: fireball despawns harmlessly (no points, combo untouched)
+    else fireball reaches the player
+        systems->>state: damage: player hit, playerHp -= 1
+        wiring->>state: diff → strong feedback
+    end
+```
 
 ## 7. Deployment view
 
