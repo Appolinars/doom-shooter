@@ -78,28 +78,33 @@ Candidate #4 left out deliberately: player-hit feedback latency ≤ 100 ms is in
 <!-- 📌 Приклад: «зовнішні — нема (свідома відмова від third-party у v1)» — це теж рішення.   -->
 <!-- Кордон довіри (trust boundary) — лінія, за якою ти не довіряєш даним без перевірки.       -->
 
-<Business context in 2-3 sentences. What the system does for whom.>
+A single-player browser game with no server: survival-loop adds a lose condition, modes, and a record, but barely moves the system boundary. The one new external system is the browser's localStorage — outside the trust boundary: it may be missing, full, or corrupt, and every read is parsed defensively (PRD AC-10). There is no network surface.
+
+<!-- brownfield scan: Explore subagent ran 2026-07-12 — see §2 Technical + §5 for the reported layout. -->
 
 **External systems (in / out):**
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| <e.g. IC> | Person | Creates goals, adds checkpoints |
-| <e.g. notification-service> | System (internal) | Receives cron registration |
-| <e.g. Identity Provider> | System (external) | Provides JWT tokens |
+| player (author-as-player) | Person | picks a mode, shoots, retries, chases the record |
+| demo guest | Person (external) | plays 1-3 runs of the published demo, zero onboarding |
+| Browser localStorage | System (external) | holds the per-mode record under a versioned key; fail-soft reads/writes |
 
 **C4 Context (L1):**
 
 ```mermaid
 C4Context
-    title <system> — System Context
+    title doom-shooter survival-loop — System Context
 
-    Person(user, "<User>", "<role + intent>")
-    System(system, "<Our System>", "<one-sentence description>")
-    System_Ext(ext, "<External system>", "<one-sentence description>")
+    Person(player, "player", "author-as-player: picks a mode, fights waves, chases the record")
+    Person_Ext(guest, "demo guest", "portfolio visitor: plays 1-3 runs, zero onboarding")
 
-    Rel(user, system, "<interaction>", "<protocol>")
-    Rel(system, ext, "<interaction>", "<protocol>")
+    System(game, "doom-shooter", "Browser game — TypeScript + Canvas 2D + Web Audio, fixed-step core")
+    System_Ext(storage, "Browser localStorage", "Per-mode best score under a versioned key; may be missing or corrupt")
+
+    Rel(player, game, "Picks mode, shoots, retries", "mouse + Esc")
+    Rel(guest, game, "Plays the published demo", "mouse")
+    Rel(game, storage, "Reads/writes the per-mode record, fail-soft", "Web Storage API")
 ```
 
 ## 4. Solution strategy
