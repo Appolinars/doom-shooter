@@ -42,7 +42,6 @@ erDiagram
         number playerHp "0..PLAYER_MAX_HP; 0 only when ended gameOver"
         string outcome "gameOver | won | null while not ended"
         number score "non-decreasing; NOW multiplied (amends base AC-03)"
-        number misses "kept for stats; escape semantics superseded by damage"
         number timeLeftMs "survive60 countdown | null in endless"
     }
     COMBO {
@@ -111,7 +110,7 @@ at run end via `wiring.ts` — the simulation never touches it.
 | `playerHp` | `number` | integer `0..PLAYER_MAX_HP` (5); every player hit −1 (PRD §8); `0` ⇒ `ended`/`gameOver` same step | AC-01, AC-02 |
 | `outcome` | `'gameOver' \| 'won' \| null` | `null` while not `ended`; `won` only in survive60 (AC-13) | drives end-screen variant |
 | `score` | `number` | ≥ 0, integer, **non-decreasing** | now multiplied (combo × kill points + far-kill bonus) — amends base flat-score AC-03; invariant survives the amendment |
-| `misses` | `number` | ≥ 0 | kept for stats; base "escaped = miss" is superseded by the breakthrough player hit — final semantics <!-- TBD: keep as shots-missed only, or retire; decide in break-tasks --> |
+| ~~`misses`~~ | — | **removed** (decided at break-tasks, 2026-07-13) | base "escaped = miss" is superseded by the breakthrough player hit (AC-01); shot accuracy deliberately not tracked — `RunStats` covers the end screen. Field, render usages, and tests retire in task T-02 |
 | `timeLeftMs` | `number \| null` | survive60: 60000 → 0 on the fixed step, 0 ⇒ `won`; endless: `null` (no timer end) | base ADR-0004 timer branch becomes per-mode |
 | `combo` | `Combo` | exactly one | resets with the run by construction |
 | `stats` | `RunStats` | exactly one | accumulated on the fixed step, never persisted (Non-goal N7) |
@@ -217,7 +216,7 @@ storage stub (in-memory `getItem`/`setItem` + fault injection for AC-10) — nev
 
 ## TBDs
 
-- `run.misses` final semantics (keep as shots-missed vs retire) — decide in break-tasks.
+- ~~`run.misses` final semantics~~ — **decided at break-tasks (2026-07-13): removed** (see `Run` table).
 - Concrete tuning values: `COMBO_TABLE` steps, `MODE_PARAMS` escalation curve (3-evening
   budget, SAD §11 High risk), `RANK_TABLE` thresholds, `FIREBALL_PARAMS` — all schema-stable,
   values are accepted tuning debt.
