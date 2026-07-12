@@ -115,11 +115,15 @@ C4Context
 <!-- 📋 Що писати: список з 3-4 виборів. На кожен — заголовок + 2-3 речення rationale.    -->
 <!-- 📌 Приклад: «Зберігати урок як таблицю блоків» — стовп, з якого виросло ADR-0001.    -->
 
-**Top-3 strategic choices (the seeds for ADRs):**
+**Top-5 strategic choices (the seeds for ADRs):**
 
-1. **<e.g. Module isolation through events>** — <2-3 sentences rationale referencing Quality Goals and constraints>.
-2. **<e.g. Single-store persistence (Postgres)>** — <2-3 sentences>.
-3. **<e.g. Server-rendered dashboard>** — <2-3 sentences>.
+1. **Extend `Round` into a mode-aware run state (ADR-0001).** The existing one-way freeze, pause, `isRoundActive` gate, and test factories are reused; `mode` (`endless` | `survive60`), `playerHp`, terminal `outcome` (`gameOver` | `won` | `null`), and an `idle` status for the start screen join the same object. One source of truth for the game phase keeps the E2E debug API and the render/wiring observers simple (QG-1 determinism: all transitions happen on the fixed step).
+2. **Single parametric wave generator for both modes (ADR-0002).** A pure function `(waveNumber, modeParams) → wave spec`, consumed on the fixed step when the current wave is exhausted, replaces the retired static `WAVE_SCHEDULE`. Endless escalates the parameters; Survive-60s pins the same formulas at high intensity (PRD §8 default) — one code path, one determinism test.
+3. **Record behind a fail-soft storage adapter (ADR-0003).** A dedicated module is the only touchpoint with localStorage: one defensive read at boot (garbage/absence → defaults + session-only flag), one write at run end, every error swallowed. Schema `doom-shooter.v1` = `{ endless: number, survive60: number }` per the migrations.md contract; the game loop never touches storage (QG-3 fail-soft by construction).
+4. **Fireball as a first-class shootable entity kind (ADR-0004).** `state.fireballs[]` lives beside `demons[]`; hit resolution generalizes to "front-most by depth across all shootable kinds" (AC-15). The fireball inherits nothing demon-specific (no path-walking, HP tiers, or score value — per CONTEXT glossary); the ≤ 32 entity cap counts both lists (QG-2).
+5. **Screens follow the existing hybrid convention (ADR-0005).** The start screen and end screens are drawn by the canvas renderer off the run status (like today's round-result overlay); interactive controls (mode select, retry) are DOM buttons toggled by status. The first click on a mode button arms audio (AC-11); gameplay input is gated on `status === 'running'` (AC-12).
+
+**Gameplay defaults locked at this gate (PRD §8 open questions closed, values as data in `config.ts`, invariants in `systems/*`):** player HP = 5, every player hit removes exactly 1; the combo breaks on a taken player hit or an escaped demon — never on a missed shot; far-kill threshold = the demon has not yet crossed the midpoint of its path; ranks D–S come from a fixed table tuned once during implementation. The escalation curve shape stays open as a tuning risk (§11) with the 3-evening budget from §2.
 
 Each tactical decision in later sections should be traceable to one of these strategic seeds. Tactical decisions that *contradict* a strategic choice are red flags — surface them in §11 Risks.
 
