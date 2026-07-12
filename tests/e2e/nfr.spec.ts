@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 declare global {
   interface Window {
     __doom: {
-      state: { round: { score: number } };
+      state: { round: { score: number }; shots: { outcome: string }[] };
       frameStats: () => { fps: number; p95Ms: number };
       spawnStress: (count: number) => void;
       fireWorld: (x: number, y: number) => void;
@@ -43,13 +43,18 @@ test('NFR — input → hit ≤ 50 ms', async ({ page }) => {
 
   const before = Date.now();
   await page.evaluate(() => window.__doom.fireWorld(150, 300));
+  // T-13 gave the fast demon 3 HP, so a single shot no longer scores — the resolved hit
+  // (a recorded Shot with outcome 'hit') is the input→hit signal now.
   await expect
-    .poll(async () => page.evaluate(() => window.__doom.state.round.score), { timeout: 2000, intervals: [2, 2, 2] })
+    .poll(
+      async () => page.evaluate(() => window.__doom.state.shots.filter((shot) => shot.outcome !== 'miss').length),
+      { timeout: 2000, intervals: [2, 2, 2] },
+    )
     .toBeGreaterThan(0);
   const latencyMs = Date.now() - before;
 
   // The real sim latency is one fixed step (~16.7 ms) + one frame; this wall-clock figure is an
   // upper bound inflated by the poll interval and Playwright round-trips — kept as a loose gate.
-  console.log(`[NFR] input → hit (fire → score, incl. poll granularity): ${latencyMs} ms (sim path is ~1 step ≈ 16.7 ms + 1 frame)`);
+  console.log(`[NFR] input → hit (fire → resolved hit, incl. poll granularity): ${latencyMs} ms (sim path is ~1 step ≈ 16.7 ms + 1 frame)`);
   expect(latencyMs).toBeLessThanOrEqual(90);
 });

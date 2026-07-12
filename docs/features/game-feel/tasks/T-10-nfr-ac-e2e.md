@@ -7,7 +7,7 @@ priority: P1
 estimate: M
 blocks: []
 blocked_by: [T-09]
-status: todo
+status: done
 context_budget: 5000
 created: 2026-07-06
 owner: Maksym Vakulenko
@@ -45,12 +45,12 @@ Then every action still resolves (placeholder/silence, AC-06), voices stay cappe
 
 ## Atomic checklist
 
-- [ ] Step 1: AC matrix — map each AC-01…AC-10 to its test (unit/integration/E2E) or a recorded manual result; fill gaps.
-- [ ] Step 2: latency probe — timestamp event→(SFX + frame) for all 6 actions; record numbers (QG-1).
-- [ ] Step 3: stress-wave FPS — `createFrameTimer` p95 under viewmodel + concurrent deaths + backdrop; record (QG-2).
-- [ ] Step 4: re-run base drift + aim-mapping tests **with juice enabled**; confirm green (the 0-mutation proof).
-- [ ] Step 5: fail-soft E2E — run with assets removed (silence + placeholders + black backdrop, no crash); voice-cap audit under a burst; load-≤3s check.
-- [ ] Step 6: record all numbers in the story / a short results note; update `tracker.md`.
+- [x] Step 1: AC matrix — map each AC-01…AC-10 to its test (unit/integration/E2E) or a recorded manual result; fill gaps. → [T-10-results.md](./T-10-results.md) §1, 10/10 automated.
+- [x] Step 2: latency probe — timestamp event→(SFX + frame) for all 6 actions; record numbers (QG-1). → `game-feel.spec.ts` QG-1; worst case 17.1 ms.
+- [x] Step 3: stress-wave FPS — `createFrameTimer` p95 under viewmodel + concurrent deaths + backdrop; record (QG-2). → 60 FPS, p95 18 ms.
+- [x] Step 4: re-run base drift + aim-mapping tests **with juice enabled**; confirm green (the 0-mutation proof). → `determinism-juice.test.ts`: juice-on/off GameState deep-equal, drift ≤ 1%, aim exact.
+- [x] Step 5: fail-soft E2E — run with assets removed (silence + placeholders + black backdrop, no crash); voice-cap audit under a burst; load-≤3s check. → QG-3 green; load 150 ms; voice cap audited at unit level.
+- [x] Step 6: record all numbers in the story / a short results note; update `tracker.md`. → [T-10-results.md](./T-10-results.md).
 
 ## Edge cases
 
