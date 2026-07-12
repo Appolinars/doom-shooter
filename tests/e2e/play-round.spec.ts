@@ -42,12 +42,17 @@ test('a click on a demon scores, and the round can reach its end screen', async 
   // Wait for the first scheduled demon (schedule spawns one at ~500 ms).
   await expect.poll(async () => (await readState(page)).demons.length, { timeout: 5000 }).toBeGreaterThan(0);
 
-  const demon = (await readState(page)).demons[0]!;
-  const pixelX = (demon.x / VIRTUAL_SIZE) * width;
-  const pixelY = (demon.y / VIRTUAL_SIZE) * height;
-  await page.mouse.click(pixelX, pixelY);
-
-  // The intent drains on the next fixed step, resolves to a kill, and the score climbs.
+  // T-13: the fast demon takes 3 shots and the pump gates fire rate, so click its live
+  // position through the gate until the kill lands and the score climbs.
+  for (let shot = 0; shot < 6; shot++) {
+    const state = await readState(page);
+    if (state.round.score > 0 || state.demons.length === 0) {
+      break;
+    }
+    const demon = state.demons[0]!;
+    await page.mouse.click((demon.x / VIRTUAL_SIZE) * width, (demon.y / VIRTUAL_SIZE) * height);
+    await page.waitForTimeout(400); // > PUMP_DURATION_MS — the next shot is not blocked
+  }
   await expect.poll(async () => (await readState(page)).round.score, { timeout: 3000 }).toBeGreaterThan(0);
 
   // Wind the clock down and confirm the round freezes on its end screen (AC-04 / ADR-0004).

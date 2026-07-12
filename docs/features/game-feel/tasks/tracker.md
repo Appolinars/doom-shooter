@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: "Maksym Vakulenko"
-updated_at: "2026-07-06"
+updated_at: "2026-07-12"
 stage: "13"
 ---
 
@@ -21,7 +21,7 @@ Statuses: `todo` → `in_progress` → `in_review` → `done` (or `blocked`).
 | [T-07](./T-07-sprite-backdrop-assets.md) | Sprite / backdrop / demon-art assets | 3 | S | — | done | local merge |
 | [T-08](./T-08-renderer-passes.md) | Renderer passes | 3 | M | T-01, T-03, T-06, T-07 | done | local merge |
 | [T-09](./T-09-wiring-and-retry.md) | Wiring in main.ts + retry | 4 | M | T-02, T-05, T-08 | done | local merge |
-| [T-10](./T-10-nfr-ac-e2e.md) | NFR + AC walkthrough / E2E | 4 | M | T-09 | todo | — |
+| [T-10](./T-10-nfr-ac-e2e.md) | NFR + AC walkthrough / E2E | 4 | M | T-09 | done | local merge |
 | [T-11](./T-11-finale-music.md) | Round-end finale music (musicGain seam) | 5 | S | T-09 | done | local merge |
 | [T-12](./T-12-esc-pause.md) | Esc pause + PAUSED overlay | 5 | S | T-09 | done | local merge |
 | [T-13](./T-13-sprite-remap-fast-hp.md) | Sprite remap: death→hurt frames, fast 3 HP | 5 | S | T-08 | done | local merge |

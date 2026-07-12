@@ -20,7 +20,7 @@ import { togglePause } from './systems/round.ts';
 import { loadSprites, validateSpriteKeys, type SpriteImage } from './assets/sprites.ts';
 import { loadBackdrops } from './assets/backdrops.ts';
 import { createAudioBus } from './audio/audio.ts';
-import { loadSfx } from './audio/sfx.ts';
+import { loadSfx, type SfxKey } from './audio/sfx.ts';
 import { loadMusic } from './audio/music.ts';
 import { createEffectsStore } from './render/effects.ts';
 import { createFeedbackWiring, restartRound } from './wiring.ts';
@@ -33,6 +33,20 @@ const pruneExpiredShots = (state: GameState, nowMs: number): void => {
   state.shots = state.shots.filter((shot) => nowMs - shot.firedAtMs < SHOT_CUE_MS);
 };
 
+/** One `play()` call observed by the ?e2e wrapper — the QG-1 latency probe reads `atMs`. */
+interface SfxLogEntry {
+  key: string;
+  atMs: number;
+}
+
+/** Render-side juice visible this frame — lets the latency probe see the paired visual. */
+interface EffectsSnapshot {
+  splats: number;
+  deaths: number;
+  viewmodelBase: string;
+  viewmodelFlash: string | null;
+}
+
 interface DoomDebugApi {
   state: GameState;
   frameStats: () => FrameStats;
@@ -42,9 +56,20 @@ interface DoomDebugApi {
   spawnStress: (count: number) => void;
   /** Wind the round clock down to one step so the end screen appears without a 26 s wait. */
   endRoundSoon: () => void;
+  /** Every SFX `play()` observed since load, in call order (T-10 QG-1 probe). */
+  sfxLog: readonly SfxLogEntry[];
+  /** Counts + viewmodel frame currently in the effects store (T-10 QG-1 probe). */
+  effectsSnapshot: () => EffectsSnapshot;
 }
 
-const installDebugApi = ({ state, frameStats }: { state: GameState; frameStats: () => FrameStats }): void => {
+interface InstallDebugApiParams {
+  state: GameState;
+  frameStats: () => FrameStats;
+  sfxLog: readonly SfxLogEntry[];
+  effectsSnapshot: () => EffectsSnapshot;
+}
+
+const installDebugApi = ({ state, frameStats, sfxLog, effectsSnapshot }: InstallDebugApiParams): void => {
   const spawnStress = (count: number): void => {
     for (let i = 0; i < count; i++) {
       const path = PATHS[i % PATHS.length]!;
@@ -63,6 +88,8 @@ const installDebugApi = ({ state, frameStats }: { state: GameState; frameStats: 
     endRoundSoon: () => {
       state.round.timeLeftMs = STEP_MS;
     },
+    sfxLog,
+    effectsSnapshot,
   };
   (window as unknown as { __doom: DoomDebugApi }).__doom = api;
 };
@@ -89,8 +116,19 @@ const bootstrap = (): void => {
   const sfx = loadSfx({ bus: audioBus });
   const music = loadMusic({ bus: audioBus });
 
+  const e2eMode = new URLSearchParams(window.location.search).has('e2e');
+
+  // ?e2e runs record every play() call so the QG-1 latency probe can timestamp the audible
+  // half of each action's feedback pair; a normal load keeps the raw sfx.play.
+  const sfxLog: SfxLogEntry[] = [];
+  const loggedPlaySfx = (key: SfxKey): void => {
+    sfxLog.push({ key, atMs: performance.now() });
+    sfx.play(key);
+  };
+  const playSfx = e2eMode ? loggedPlaySfx : sfx.play;
+
   const effects = createEffectsStore();
-  const wiring = createFeedbackWiring({ state, effects, playSfx: sfx.play, onRoundEnd: music.play });
+  const wiring = createFeedbackWiring({ state, effects, playSfx, onRoundEnd: music.play });
 
   const backdrops = loadBackdrops();
   let backdrop: SpriteImage | null = null;
@@ -110,8 +148,6 @@ const bootstrap = (): void => {
       togglePause(state.round);
     }
   });
-
-  const e2eMode = new URLSearchParams(window.location.search).has('e2e');
 
   // In scripted (?e2e) runs, tab focus is environmental and would flake the AC-07 gate — force
   // it on so the real pointer → world → weapon → hit path is exercised deterministically. Focus
@@ -160,7 +196,20 @@ const bootstrap = (): void => {
   });
 
   if (e2eMode) {
-    installDebugApi({ state, frameStats: () => frameTimer.stats() });
+    installDebugApi({
+      state,
+      frameStats: () => frameTimer.stats(),
+      sfxLog,
+      effectsSnapshot: () => {
+        const frame = effects.viewmodelFrame();
+        return {
+          splats: effects.splats().length,
+          deaths: effects.deathVisuals().length,
+          viewmodelBase: frame.base,
+          viewmodelFlash: frame.flash,
+        };
+      },
+    });
   }
 };
 
